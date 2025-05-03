@@ -24,7 +24,7 @@ This setup consists of two main components:
 
     ```bash
     cd crates/zkevm-succinct/succinct-guest
-    cargo prove build --release
+    cargo prove build
     ```
 
     This compiles `succinct-guest/src/main.rs` to RISC-V ELF and places it in the `target/elf-compilation/` directory within the workspace root.
