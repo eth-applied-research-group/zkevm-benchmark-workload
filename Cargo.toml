@@ -140,5 +140,3 @@ secp256k1 = { git = "https://github.com/zkMIPS-patches/rust-secp256k1", branch =
 substrate-bn = { git = "https://github.com/zkMIPS-patches/bn", branch = "patch-0.6.0" }
 rsa = { git = "https://github.com/zkMIPS-patches/RustCrypto-RSA.git", branch = "patch-rsa-0.9.6" }
 kzg-rs = { git = "https://github.com/zkMIPS-patches/kzg-rs.git", branch = "zkMIPS" }
-# Each zkVM currently requires a set of precompiles in order to reduce the latency of the prover.
-# These precompiles are added by patching the relevant dependency.
