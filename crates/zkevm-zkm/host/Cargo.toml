@@ -1,0 +1,22 @@
+[package]
+name = "zkm-stateless-host"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+# This is the original import, we cannot use it because it depends on alloy-signer which depends on c-kzg 1.0
+# whereas latest reth uses c-kzg 2.0 and we cannot link c-kzg twice.
+# zkm-sdk = { git = "https://github.com/zkMIPS/zkMIPS.git" }
+
+zkm-sdk = { git = "https://github.com/kevaundray/zkMIPS.git", branch = "kw/patch-alloy" }
+witness-generator.workspace = true
+metrics.workspace = true
+dotenv = "0.15.0"
+
+[build-dependencies]
+zkm-build = { git = "https://github.com/zkMIPS/zkMIPS.git" }
+
+[lints]
+workspace = true

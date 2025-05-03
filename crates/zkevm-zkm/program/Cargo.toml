@@ -1,0 +1,24 @@
+[package]
+name = "zkm-stateless-program"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+zkm-zkvm = { git = "https://github.com/zkMIPS/zkMIPS.git" }
+reth-stateless.workspace = true
+reth-ethereum-primitives = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+reth-primitives-traits = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+alloy-primitives.workspace = true
+tracing-subscriber = "*"
+tracing = "*"
+
+[lints]
+workspace = true
