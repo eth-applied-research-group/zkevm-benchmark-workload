@@ -1,4 +1,4 @@
-//! TODO
+#![doc = include_str!("../../README.md")]
 
 use generate_stateless_witness::generate;
 use metrics::WorkloadMetrics;
@@ -7,12 +7,16 @@ use zkm_sdk::{ProverClient, ZKMStdin};
 use std::collections::HashMap;
 use witness_generator::generate_stateless_witness;
 
-/// The ELF (executable and linkable format) file for the Succinct RISC-V zkVM.
+/// Path to the compiled MIPS ELF file for the `zkm-guest` crate.
 pub const STATELESS_ELF: &[u8] = include_bytes!(concat!(
     env!("CARGO_WORKSPACE_DIR"),
-    "/target/elf-compilation/mipsel-zkm-zkvm-elf/release/zkm-stateless-program"
+    "/target/mipsel-zkm-zkvm-elf/release/zkm-guest"
 ));
 
+/// Main entry point for the host benchmarker.
+///
+/// This program orchestrates the execution of Ethereum block validation
+/// within the zkMIPS zkVM for various test cases and records performance metrics.
 fn main() {
     // Setup the logger.
     zkm_sdk::utils::setup_logger();

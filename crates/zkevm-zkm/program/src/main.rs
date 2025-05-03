@@ -1,13 +1,15 @@
 // #![no_std]
 #![no_main]
+#![doc = include_str!("../../README.md")]
 zkm_zkvm::entrypoint!(main);
 
 extern crate alloc;
 
 use alloc::sync::Arc;
-use reth_stateless::{fork_spec::ForkSpec, validation::stateless_validation, ClientInput};
+use reth_stateless::{ClientInput, fork_spec::ForkSpec, validation::stateless_validation};
 use tracing_subscriber::fmt;
 
+/// Entry point for the zkMIPS zkVM execution.
 pub fn main() {
     init_tracing_just_like_println();
 
@@ -22,6 +24,7 @@ pub fn main() {
     println!("cycle-tracker-report-end: validation");
 }
 
+/// Initializes a basic `tracing` subscriber that mimics `println!` behavior.
 fn init_tracing_just_like_println() {
     // Build a formatter that prints *only* the message text + '\n'
     let plain = fmt::format()

@@ -11136,6 +11136,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "zkm-guest"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "reth-ethereum-primitives",
+ "reth-primitives-traits",
+ "reth-stateless",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+ "zkm-zkvm 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
+]
+
+[[package]]
+name = "zkm-host"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "metrics 0.1.0",
+ "witness-generator",
+ "zkm-build 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
+ "zkm-sdk",
+]
+
+[[package]]
 name = "zkm-lib"
 version = "1.0.0"
 source = "git+https://github.com/kevaundray/zkMIPS.git?branch=kw%2Fpatch-alloy#6aaf334ed717288e97f461a318d52b8aff911f39"
@@ -11457,30 +11481,6 @@ dependencies = [
  "zkm-derive",
  "zkm-primitives 1.0.0 (git+https://github.com/kevaundray/zkMIPS.git?branch=kw%2Fpatch-alloy)",
  "zkm-zkvm 1.0.0 (git+https://github.com/kevaundray/zkMIPS.git?branch=kw%2Fpatch-alloy)",
-]
-
-[[package]]
-name = "zkm-stateless-host"
-version = "0.1.0"
-dependencies = [
- "dotenv",
- "metrics 0.1.0",
- "witness-generator",
- "zkm-build 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
- "zkm-sdk",
-]
-
-[[package]]
-name = "zkm-stateless-program"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "reth-ethereum-primitives",
- "reth-primitives-traits",
- "reth-stateless",
- "tracing",
- "tracing-subscriber 0.2.25",
- "zkm-zkvm 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
 ]
 
 [[package]]
