@@ -19,5 +19,6 @@ reth-primitives-traits = { workspace = true, features = [
 alloy-primitives.workspace = true
 tracing-subscriber = "*"
 tracing = "*"
+
 [lints]
 workspace = true
