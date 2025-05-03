@@ -1,10 +1,10 @@
 //! TODO
 
-use generate_witness::generate;
+use generate_stateless_witness::generate;
 use metrics::WorkloadMetrics;
 use sp1_sdk::{ProverClient, SP1Stdin};
 use std::collections::HashMap;
-use witness_generator::generate_witness;
+use witness_generator::generate_stateless_witness;
 
 /// The ELF (executable and linkable format) file for the Succinct RISC-V zkVM.
 pub const STATELESS_ELF: &[u8] = include_bytes!(concat!(
