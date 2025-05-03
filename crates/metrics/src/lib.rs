@@ -1,26 +1,31 @@
+#![doc = include_str!("../README.md")]
+
 use serde_derive::{Deserialize, Serialize};
 use std::{collections::HashMap, fs, io, path::Path};
 use thiserror::Error;
 
 /// Cycle-count metrics for a particular workload.
+///
+/// Stores the total cycle count and a breakdown of cycle count per named region.
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct WorkloadMetrics {
-    /// Name of the workload.
+    /// Name of the workload (e.g., "fft", "aes").
     pub name: String,
-    /// Total number of cycles.
+    /// Total number of cycles for the entire workload execution.
     pub total_num_cycles: u64,
-    /// Region-specific cycles.
+    /// Region-specific cycles, mapping region names (e.g., "setup", "compute") to their cycle counts.
     pub region_cycles: HashMap<String, u64>,
 }
 
+/// Errors that can occur during metrics processing.
 #[derive(Error, Debug)]
 pub enum MetricsError {
-    /// Serde de/serialization error.
-    #[error("serde de/serialization error")]
+    /// Error during JSON serialization or deserialization.
+    #[error("serde (de)serialization error: {0}")]
     Serde(#[from] serde_json::Error),
 
-    /// Any std-io failure while touching the filesystem.
-    #[error("I/O error")]
+    /// Error during file system I/O operations.
+    #[error("I/O error: {0}")]
     Io(#[from] io::Error),
 }
 
@@ -35,17 +40,33 @@ impl MetricsError {
 }
 
 impl WorkloadMetrics {
+    /// Serializes a list of `WorkloadMetrics` into a JSON string.
+    ///
+    /// # Errors
+    ///
+    /// Returns `MetricsError::Serde` if serialization fails.
     pub fn to_json(items: &[WorkloadMetrics]) -> Result<String, MetricsError> {
         serde_json::to_string(items).map_err(MetricsError::from)
     }
 
+    /// Deserializes a list of `WorkloadMetrics` from a JSON string.
+    ///
+    /// # Errors
+    ///
+    /// Returns `MetricsError::Serde` if deserialization fails.
     pub fn from_json(json: &str) -> Result<Vec<WorkloadMetrics>, MetricsError> {
         serde_json::from_str(json).map_err(MetricsError::from)
     }
 
-    /// Serialise `items` and write them to `path` atomically.
+    /// Serializes `items` using JSON pretty-print and writes them to `path` atomically.
     ///
     /// The file is created if it does not exist and truncated if it does.
+    /// Parent directories are created if they are missing.
+    ///
+    /// # Errors
+    ///
+    /// Returns `MetricsError::Io` if any filesystem operation fails.
+    /// Returns `MetricsError::Serde` if JSON serialization fails.
     pub fn to_path<P: AsRef<Path>>(path: P, items: &[WorkloadMetrics]) -> Result<(), MetricsError> {
         let path = path.as_ref();
 
@@ -55,10 +76,16 @@ impl WorkloadMetrics {
         }
         let json = serde_json::to_string_pretty(items)?;
         fs::write(path, json)?;
+
         Ok(())
     }
 
-    /// Read the file at `path` and deserialise a `Vec<WorkloadMetrics>`.
+    /// Reads the file at `path` and deserializes a `Vec<WorkloadMetrics>` from its JSON content.
+    ///
+    /// # Errors
+    ///
+    /// Returns `MetricsError::Io` if reading the file fails.
+    /// Returns `MetricsError::Serde` if JSON deserialization fails.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Vec<WorkloadMetrics>, MetricsError> {
         let contents = fs::read_to_string(path)?;
         Ok(serde_json::from_str(&contents)?)
@@ -69,7 +96,9 @@ impl WorkloadMetrics {
 mod tests {
     use super::*;
     use std::iter::FromIterator;
+    use tempfile::NamedTempFile;
 
+    // This is just a fixed sample we are using to test serde_roundtrip
     fn sample() -> Vec<WorkloadMetrics> {
         vec![
             WorkloadMetrics {
@@ -110,25 +139,17 @@ mod tests {
 
     #[test]
     fn file_round_trip() -> Result<(), MetricsError> {
-        // Put the temp file in the system temp directory.
-        let mut p: PathBuf = std::env::temp_dir();
-        p.push("workload_metrics_test.json");
-
-        // Clean up even if the test panics.
-        struct Guard(PathBuf);
-        impl Drop for Guard {
-            fn drop(&mut self) {
-                let _ = fs::remove_file(&self.0);
-            }
-        }
-        let _g = Guard(p.clone());
+        // Create a named temporary file.
+        let temp_file = NamedTempFile::new()?;
+        let path = temp_file.path();
 
         let workloads = sample();
 
-        // Write → read → compare.
-        WorkloadMetrics::to_path(&p, &workloads)?;
-        let read_back = WorkloadMetrics::from_path(&p)?;
+        // Write → read → compare using the temp file's path.
+        WorkloadMetrics::to_path(path, &workloads)?;
+        let read_back = WorkloadMetrics::from_path(path)?;
         assert_eq!(workloads, read_back);
+
         Ok(())
     }
 }
