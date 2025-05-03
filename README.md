@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo-white-transparent-bg.png" alt="ZK-EVM Bench" width="300"/>
+</p>
+
 # ZK-EVM Benchmark Workload
 
 This workspace contains code for executing Ethereum block validation logic within different Zero-Knowledge Virtual Machines (zkVMs).
@@ -64,25 +68,4 @@ Each zkVM benchmark implementation follows a common pattern:
 | zkVM Platform        | Crate Path                | Guest Crate    | Host Crate    | Metrics Output         |
 | -------------------- | ------------------------- | -------------- | ------------- | ---------------------- |
 | **Succinct SP1**     | `crates/zkevm-succinct` | `succinct-guest` | `succinct-host` | `zkevm-metrics/succinct/` |
-| **zkMIPS**           | `crates/zkevm-zkm`      | `zkm-guest`    | `zkm-host`    | `zkevm-metrics/zkm/`      |
-| *(Add new zkVMs here)* |                           |                |               |                        |
-
-## Running Benchmarks (General Flow)
-
-1. **Compile the Guest Program:**
-    - Navigate to the specific guest crate directory (e.g., `cd crates/zkevm-succinct/succinct-guest`).
-    - Compile the guest program using the appropriate command for the target zkVM (refer to the specific zkVM's documentation or build system, e.g., `cargo prove build` for SP1, `cargo build --target ...` for others).
-
-2. **Run the Host Program:**
-    - Navigate to the corresponding host crate directory (e.g., `cd ../succinct-host`).
-    - Run the host: `cargo run --release`
-    - Check the `Metrics Output` path listed in the table for JSON results.
-
-## Note on benchmarking regions of the code
-
-The region cycle count strategy does not extend to multiple zkVMs. Some/Most only give you the cycle count for the whole program, we can
-still work with this by splitting up the program to determine the cost for particular regions, but its more work and messier.
-
-## License
-
-This workspace inherits its license. Refer to the root `Cargo.toml` or `LICENSE` file (if present) for details.
+| **zkMIPS**           | `crates/zkevm-zkm`      | `zkm-guest`    | `zkm-host`    | `zkevm-metrics/zkm/`
