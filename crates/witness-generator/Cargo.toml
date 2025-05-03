@@ -1,0 +1,28 @@
+[package]
+name = "witness-generator"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+ef-tests.workspace = true
+walkdir.workspace = true
+rayon.workspace = true
+reth-stateless.workspace = true
+reth-ethereum-primitives = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+reth-primitives-traits = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+reth-chainspec.workspace = true
+alloy-primitives = { workspace = true, features = ["serde"] }
+
+[lints]
+workspace = true
