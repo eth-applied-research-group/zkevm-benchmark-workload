@@ -65,9 +65,14 @@ Each zkVM benchmark implementation follows a common pattern:
     ./scripts/download-and-extract-fixtures.sh
     ```
 
+3. **Patching Precompiles**: Each zkVM, for efficiency purposes requires particular dependencies to be patched.
+This repository contains an `xtask` that will automate this process by calling `cargo <zkvm-name>`. See `.config/cargo.toml` for how this is setup and `precompile-patches` for the patches that each zkVM requires.
+
+4. **Run benchmark**: Navigate to the specific zkVM that you would like to benchmark and follow the readme.
+
 ## Supported zkVM Benchmarks
 
-| zkVM Platform        | Crate Path                | Guest Crate    | Host Crate    | Metrics Output         |
+| zkVM        | Crate Path                | Guest Crate    | Host Crate    | Metrics Output         |
 | -------------------- | ------------------------- | -------------- | ------------- | ---------------------- |
 | **Succinct SP1**     | `crates/zkevm-succinct` | `succinct-guest` | `succinct-host` | `zkevm-metrics/succinct/` |
 | **zkMIPS**           | `crates/zkevm-zkm`      | `zkm-guest`    | `zkm-host`    | `zkevm-metrics/zkm/`
