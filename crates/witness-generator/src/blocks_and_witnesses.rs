@@ -4,52 +4,82 @@ pub use reth_stateless::{ClientInput, fork_spec::ForkSpec};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+/// Represents a named collection of block/witness pairs for a specific Ethereum test case.
+///
+/// This structure typically corresponds to a single blockchain test case from the
+/// `ethereum/tests` fixtures (however we are using `zkevm-fixtures`)
+///  containing all the sequential block transitions within that test.
 #[derive(Debug, Serialize, Deserialize)]
-/// You can think of a test case as a mini-blockchain
 pub struct BlocksAndWitnesses {
-    /// Name of the blockchain test
+    /// Name of the blockchain test case (e.g., "ModExpAttackContract").
     pub name: String,
-    /// Block coupled with its corresponding execution witness
+    /// Sequentially ordered blocks, each coupled with its corresponding execution witness.
     pub blocks_and_witnesses: Vec<ClientInput>,
-    /// Chain specification
+    /// The network fork specification (e.g., Shanghai, Cancun, Prague) active for this test case.
     // TODO: Don't think we want to pass this through maybe ForkSpec
     // TODO: Also Genesis file is wrong in chainspec
     // TODO: We can keep this initially and don't measure the time it takes to deserialize
     pub network: ForkSpec,
 }
 
+/// Errors that can occur during serialization or deserialization of `BlocksAndWitnesses`.
 #[derive(Error, Debug)]
 pub enum BwError {
-    /// Serde (de)serialisation error.
-    #[error("serde de/serialization error")]
+    /// Serde JSON (de)serialization error.
+    #[error("serde JSON (de)serialization error: {0}")]
     Serde(#[from] serde_json::Error),
 
-    /// Any failure while touching the filesystem.
-    #[error("I/O error")]
+    /// Error during file system I/O operations.
+    #[error("I/O error: {0}")]
     Io(#[from] io::Error),
 }
 
 impl BlocksAndWitnesses {
-    /// Serialise *multiple* test-cases to a JSON string (compact).
+    /// Serializes a list of `BlocksAndWitnesses` test cases to a JSON pretty-printed string.
+    ///
+    /// # Errors
+    ///
+    /// Returns `BwError::Serde` if JSON serialization fails.
     pub fn to_json(items: &[BlocksAndWitnesses]) -> Result<String, BwError> {
-        serde_json::to_string(items).map_err(BwError::from)
+        serde_json::to_string_pretty(items).map_err(BwError::from)
     }
 
-    /// Parse the JSON representation produced by [`to_json`].
+    /// Deserializes a list of `BlocksAndWitnesses` test cases from a JSON string.
+    ///
+    /// Assumes the input JSON was produced by [`Self::to_json`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `BwError::Serde` if JSON deserialization fails.
     pub fn from_json(json: &str) -> Result<Vec<BlocksAndWitnesses>, BwError> {
         serde_json::from_str(json).map_err(BwError::from)
     }
 
-    /// Pretty-print to `path` (truncates or creates the file).
+    /// Serializes `items` to pretty-printed JSON and writes them to `path`.
+    ///
+    /// The file is created if it does not exist and truncated if it does.
+    /// Parent directories are *not* created automatically.
+    ///
+    /// # Errors
+    ///
+    /// Returns `BwError::Io` if any filesystem operation fails.
+    /// Returns `BwError::Serde` if JSON serialization fails.
     pub fn to_path<P: AsRef<Path>>(path: P, items: &[BlocksAndWitnesses]) -> Result<(), BwError> {
-        let json = serde_json::to_string_pretty(items)?;
+        let json = Self::to_json(items)?;
         fs::write(path, json)?;
         Ok(())
     }
 
-    /// Read `path` and deserialise.
+    /// Reads the file at `path` and deserializes a `Vec<BlocksAndWitnesses>` from its JSON content.
+    ///
+    /// Assumes the file contains JSON compatible with [`Self::from_json`].
+    ///
+    /// # Errors
+    ///
+    /// Returns `BwError::Io` if reading the file fails.
+    /// Returns `BwError::Serde` if JSON deserialization fails.
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Vec<BlocksAndWitnesses>, BwError> {
         let contents = fs::read_to_string(path)?;
-        Ok(serde_json::from_str(&contents)?)
+        Ok(Self::from_json(&contents)?)
     }
 }

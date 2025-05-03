@@ -9,14 +9,27 @@ use walkdir::{DirEntry, WalkDir};
 use crate::BlocksAndWitnesses;
 use reth_stateless::ClientInput;
 
-/// Name of a directory in the ethereum spec tests
-const VALID_BLOCKS: &str = "blockchain_tests/prague/eip2537_bls_12_381_precompiles";
+/// Root directory for the relevant blockchain tests within the `zkevm-fixtures` submodule.
+const BLOCKCHAIN_TEST_DIR: &str = "blockchain_tests";
 
-/// This method will fetch all tests in the ethereum-tests/Blockchaintests/ValidBlocks folder
-/// and generate a stateless witness for them.
+/// Generates `BlocksAndWitnesses` for all valid blockchain test cases found
+/// within the specified `BLOCKCHAIN_TEST_DIR` directory in `zkevm-fixtures`.
+///
+/// It walks the target directory, parses each JSON test file, executes the test
+/// using `ef_tests`, collects the resulting block/witness pairs, and packages them.
+///
+/// Uses `rayon` for parallel processing of test cases within a single file.
+///
+/// # Panics
+///
+/// - If the `zkevm-fixtures` directory cannot be located relative to the crate root.
+/// - If the target `BLOCKCHAIN_TEST_DIR` directory does not exist.
+/// - If a JSON test case file cannot be parsed.
+/// - If `ef_tests::cases::blockchain_test::run_case` fails for a test.
 pub fn generate() -> Vec<BlocksAndWitnesses> {
-    // First get the path to "ValidBlocks"
-    let suite_path = path_to_zkevm_fixtures(VALID_BLOCKS);
+    // First get the path to "BLOCKCHAIN_TEST_DIR"
+    // TODO: Maybe we should have this be passed as a parameter in the future
+    let suite_path = path_to_zkevm_fixtures(BLOCKCHAIN_TEST_DIR);
     // Verify that the path exists
     assert!(
         suite_path.exists(),
@@ -35,16 +48,15 @@ pub fn generate() -> Vec<BlocksAndWitnesses> {
 
     let mut blocks_and_witnesses = Vec::new();
     for (_, test_case) in test_cases.into_iter() {
-        // if test_case.skip {
-        //     continue;
-        // }
         let blockchain_case: Vec<BlocksAndWitnesses> = test_case
             // Inside of a JSON file, we can have multiple tests, for example testopcode_Cancun,
             // testopcode_Prague
             // This is why we have `tests`.
             .tests
             .par_iter()
-            // .filter(|(_, case)| !BlockchainTestCase::excluded_fork(case.network))
+            // TODO: We shouldn't need this since we are generating specific tests and have control
+            // TODO: over the network.
+            .filter(|(_, case)| !BlockchainTestCase::excluded_fork(case.network))
             .map(|(name, case)| BlocksAndWitnesses {
                 name: name.to_string(),
                 blocks_and_witnesses: run_case(case)
@@ -61,7 +73,7 @@ pub fn generate() -> Vec<BlocksAndWitnesses> {
     blocks_and_witnesses
 }
 
-/// Recursively find all files with a given extension.
+/// Recursively finds all files within `path` that end with `extension`.
 // This function was copied from `ef-tests`
 fn find_all_files_with_extension(path: &Path, extension: &str) -> Vec<PathBuf> {
     WalkDir::new(path)
@@ -72,14 +84,12 @@ fn find_all_files_with_extension(path: &Path, extension: &str) -> Vec<PathBuf> {
         .collect()
 }
 
-/// Path to the zkevm-fixtures in the ef-tests crate
+/// Constructs the absolute path to a subdirectory within the `zkevm-fixtures` submodule.
+///
+/// Assumes this crate (`witness-generator`) is located at `<workspace-root>/crates/witness-generator`.
+///
 fn path_to_zkevm_fixtures(suite: &str) -> PathBuf {
-    let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .expect("should be at the crates directory")
-        .parent()
-        .expect("should be at the workspace directory");
-
+    let workspace_root = Path::new(env!("CARGO_WORKSPACE_DIR"));
     workspace_root
         .join("zkevm-fixtures")
         .join("fixtures")
