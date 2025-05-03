@@ -1,12 +1,14 @@
 #![no_main]
+#![doc = include_str!("../../README.md")]
 
 extern crate alloc;
 
 use alloc::sync::Arc;
-use reth_stateless::{fork_spec::ForkSpec, validation::stateless_validation, ClientInput};
+use reth_stateless::{ClientInput, fork_spec::ForkSpec, validation::stateless_validation};
 use tracing_subscriber::fmt;
 
 sp1_zkvm::entrypoint!(main);
+/// Entry point.
 pub fn main() {
     init_tracing_just_like_println();
 
@@ -21,6 +23,10 @@ pub fn main() {
     println!("cycle-tracker-report-end: validation");
 }
 
+/// TODO: can we put this in the host? (Note that if we want sp1 logs, it will look very plain in that case)
+/// Initializes a basic `tracing` subscriber that mimics `println!` behavior.
+///
+/// This is because we want to use tracing in the no_std program to capture cycle counts.
 fn init_tracing_just_like_println() {
     // Build a formatter that prints *only* the message text + '\n'
     let plain = fmt::format()

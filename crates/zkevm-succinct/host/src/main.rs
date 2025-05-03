@@ -1,4 +1,4 @@
-//! TODO
+#![doc = include_str!("../../README.md")]
 
 use generate_stateless_witness::generate;
 use metrics::WorkloadMetrics;
@@ -6,12 +6,38 @@ use sp1_sdk::{ProverClient, SP1Stdin};
 use std::collections::HashMap;
 use witness_generator::generate_stateless_witness;
 
-/// The ELF (executable and linkable format) file for the Succinct RISC-V zkVM.
+/// Path to the compiled RISC-V ELF file for the `succinct-guest` crate.
+///
+/// This constant assumes the ELF has been built using `cargo prove build --release`
+/// within the `crates/zkevm-succinct/succinct-guest` directory.
 pub const STATELESS_ELF: &[u8] = include_bytes!(concat!(
     env!("CARGO_WORKSPACE_DIR"),
-    "/target/elf-compilation/riscv32im-succinct-zkvm-elf/release/stateless-program"
+    "/target/elf-compilation/riscv32im-succinct-zkvm-elf/release/succinct-guest"
 ));
 
+/// Main entry point for the host benchmarker.
+///
+/// This program orchestrates the execution of Ethereum block validation
+/// within the SP1 zkVM for various test cases and records performance metrics.
+///
+/// # Steps:
+/// 1. Initializes logging and loads environment variables (e.g., for ProverClient).
+/// 2. Sets up the SP1 `ProverClient`.
+/// 3. Generates test data (`Vec<BlocksAndWitnesses>`) using `witness-generator`.
+/// 4. Iterates through each test corpus and each block within the corpus.
+/// 5. For each block:
+///    a. Creates SP1 standard input (`SP1Stdin`) containing the `ClientInput` and `ForkSpec`.
+///    b. Executes the `succinct-guest` ELF (`STATELESS_ELF`) in the SP1 zkVM using `client.execute()`.
+///    c. Extracts total cycle count and region-specific cycle counts from the execution report.
+///    d. Formats the results into a `WorkloadMetrics` struct.
+/// 6. Saves the collected `WorkloadMetrics` for each corpus to a JSON file in `zkevm-metrics/succinct/`.
+/// 7. Prints the collected metrics to standard output for immediate feedback.
+///
+/// # Panics
+/// - If `ProverClient` setup fails (missing environment variables).
+/// - If `witness-generator::generate()` panics.
+/// - If SP1 execution (`client.execute().run()`) fails.
+/// - If writing the metrics JSON file fails.
 fn main() {
     // Setup the logger.
     sp1_sdk::utils::setup_logger();

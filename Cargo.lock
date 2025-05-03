@@ -8983,29 +8983,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
-name = "stateless-host"
-version = "0.1.0"
-dependencies = [
- "dotenv",
- "metrics 0.1.0",
- "sp1-sdk",
- "witness-generator",
-]
-
-[[package]]
-name = "stateless-program"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "reth-ethereum-primitives",
- "reth-primitives-traits",
- "reth-stateless",
- "sp1-zkvm",
- "tracing",
- "tracing-subscriber 0.3.19",
-]
-
-[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9096,6 +9073,29 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+
+[[package]]
+name = "succinct-guest"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "reth-ethereum-primitives",
+ "reth-primitives-traits",
+ "reth-stateless",
+ "sp1-zkvm",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "succinct-host"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "metrics 0.1.0",
+ "sp1-sdk",
+ "witness-generator",
+]
 
 [[package]]
 name = "svm-rs"
