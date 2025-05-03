@@ -47,7 +47,7 @@ pub fn generate() -> Vec<BlocksAndWitnesses> {
         .collect();
 
     let mut blocks_and_witnesses = Vec::new();
-    for (_, test_case) in test_cases.into_iter() {
+    for (_, test_case) in test_cases {
         let blockchain_case: Vec<BlocksAndWitnesses> = test_case
             // Inside of a JSON file, we can have multiple tests, for example testopcode_Cancun,
             // testopcode_Prague

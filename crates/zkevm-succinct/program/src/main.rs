@@ -26,7 +26,7 @@ pub fn main() {
 /// TODO: can we put this in the host? (Note that if we want sp1 logs, it will look very plain in that case)
 /// Initializes a basic `tracing` subscriber that mimics `println!` behavior.
 ///
-/// This is because we want to use tracing in the no_std program to capture cycle counts.
+/// This is because we want to use tracing in the `no_std` program to capture cycle counts.
 fn init_tracing_just_like_println() {
     // Build a formatter that prints *only* the message text + '\n'
     let plain = fmt::format()

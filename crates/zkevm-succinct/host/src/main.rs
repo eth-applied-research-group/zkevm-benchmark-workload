@@ -19,25 +19,6 @@ pub const STATELESS_ELF: &[u8] = include_bytes!(concat!(
 ///
 /// This program orchestrates the execution of Ethereum block validation
 /// within the SP1 zkVM for various test cases and records performance metrics.
-///
-/// # Steps:
-/// 1. Initializes logging and loads environment variables (e.g., for ProverClient).
-/// 2. Sets up the SP1 `ProverClient`.
-/// 3. Generates test data (`Vec<BlocksAndWitnesses>`) using `witness-generator`.
-/// 4. Iterates through each test corpus and each block within the corpus.
-/// 5. For each block:
-///    a. Creates SP1 standard input (`SP1Stdin`) containing the `ClientInput` and `ForkSpec`.
-///    b. Executes the `succinct-guest` ELF (`STATELESS_ELF`) in the SP1 zkVM using `client.execute()`.
-///    c. Extracts total cycle count and region-specific cycle counts from the execution report.
-///    d. Formats the results into a `WorkloadMetrics` struct.
-/// 6. Saves the collected `WorkloadMetrics` for each corpus to a JSON file in `zkevm-metrics/succinct/`.
-/// 7. Prints the collected metrics to standard output for immediate feedback.
-///
-/// # Panics
-/// - If `ProverClient` setup fails (missing environment variables).
-/// - If `witness-generator::generate()` panics.
-/// - If SP1 execution (`client.execute().run()`) fails.
-/// - If writing the metrics JSON file fails.
 fn main() {
     // Setup the logger.
     sp1_sdk::utils::setup_logger();
@@ -82,8 +63,9 @@ fn main() {
             };
             reports.push(metrics);
         }
+
         WorkloadMetrics::to_path(
-            &format!(
+            format!(
                 "{}/{}/{}/{}.json",
                 env!("CARGO_WORKSPACE_DIR"),
                 "zkevm-metrics",
@@ -93,6 +75,7 @@ fn main() {
             &reports,
         )
         .unwrap();
+
         // Print out the reports to std for now
         // We can prettify it later.
         dbg!(&reports);

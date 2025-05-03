@@ -71,7 +71,7 @@ fn main() -> Result<()> {
         .and_then(Item::as_table)
     {
         let ci = root_doc["patch"]["crates-io"].as_table_mut().unwrap();
-        for (k, v) in tbl.iter() {
+        for (k, v) in tbl {
             ci[k] = v.clone(); // overwrite / insert
         }
     } else {
@@ -112,7 +112,7 @@ fn gather_owned_keys(dir: &PathBuf) -> Result<HashSet<String>> {
             .and_then(|p| p.get("crates-io"))
             .and_then(Item::as_table)
         {
-            for (k, _) in tbl.iter() {
+            for (k, _) in tbl {
                 keys.insert(k.to_string());
             }
         }

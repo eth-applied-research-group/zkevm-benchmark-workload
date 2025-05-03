@@ -7,7 +7,7 @@ This crate provides data structures and utilities for handling workload performa
 The core data structure is `WorkloadMetrics`, which stores:
 
 - `name`: The name of the workload (e.g., "fft", "aes"). -- This is usually linked to the inputs that you supply to the guest program. For example,
-   if you supply odd numbers to a guest program that adds numbers together, you might name the workload "odd_numbers_add"
+   if you supply odd numbers to a guest program that adds numbers together, you might name the workload `odd_numbers_add`
 - `total_num_cycles`: The total cycle count for the whole execution.
 - `region_cycles`: A map associating names (e.g., "setup", "compute") with the cycle counts for specific regions within the workload.
 

@@ -11,7 +11,7 @@ use thiserror::Error;
 ///  containing all the sequential block transitions within that test.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BlocksAndWitnesses {
-    /// Name of the blockchain test case (e.g., "ModExpAttackContract").
+    /// Name of the blockchain test case (e.g., "`ModExpAttackContract`").
     pub name: String,
     /// Sequentially ordered blocks, each coupled with its corresponding execution witness.
     pub blocks_and_witnesses: Vec<ClientInput>,
@@ -40,7 +40,7 @@ impl BlocksAndWitnesses {
     /// # Errors
     ///
     /// Returns `BwError::Serde` if JSON serialization fails.
-    pub fn to_json(items: &[BlocksAndWitnesses]) -> Result<String, BwError> {
+    pub fn to_json(items: &[Self]) -> Result<String, BwError> {
         serde_json::to_string_pretty(items).map_err(BwError::from)
     }
 
@@ -51,7 +51,7 @@ impl BlocksAndWitnesses {
     /// # Errors
     ///
     /// Returns `BwError::Serde` if JSON deserialization fails.
-    pub fn from_json(json: &str) -> Result<Vec<BlocksAndWitnesses>, BwError> {
+    pub fn from_json(json: &str) -> Result<Vec<Self>, BwError> {
         serde_json::from_str(json).map_err(BwError::from)
     }
 
@@ -64,7 +64,7 @@ impl BlocksAndWitnesses {
     ///
     /// Returns `BwError::Io` if any filesystem operation fails.
     /// Returns `BwError::Serde` if JSON serialization fails.
-    pub fn to_path<P: AsRef<Path>>(path: P, items: &[BlocksAndWitnesses]) -> Result<(), BwError> {
+    pub fn to_path<P: AsRef<Path>>(path: P, items: &[Self]) -> Result<(), BwError> {
         let json = Self::to_json(items)?;
         fs::write(path, json)?;
         Ok(())
@@ -78,8 +78,8 @@ impl BlocksAndWitnesses {
     ///
     /// Returns `BwError::Io` if reading the file fails.
     /// Returns `BwError::Serde` if JSON deserialization fails.
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Vec<BlocksAndWitnesses>, BwError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Vec<Self>, BwError> {
         let contents = fs::read_to_string(path)?;
-        Ok(Self::from_json(&contents)?)
+        Self::from_json(&contents)
     }
 }

@@ -7,7 +7,7 @@ use thiserror::Error;
 /// Cycle-count metrics for a particular workload.
 ///
 /// Stores the total cycle count and a breakdown of cycle count per named region.
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct WorkloadMetrics {
     /// Name of the workload (e.g., "fft", "aes").
     pub name: String,
@@ -45,7 +45,7 @@ impl WorkloadMetrics {
     /// # Errors
     ///
     /// Returns `MetricsError::Serde` if serialization fails.
-    pub fn to_json(items: &[WorkloadMetrics]) -> Result<String, MetricsError> {
+    pub fn to_json(items: &[Self]) -> Result<String, MetricsError> {
         serde_json::to_string(items).map_err(MetricsError::from)
     }
 
@@ -54,7 +54,7 @@ impl WorkloadMetrics {
     /// # Errors
     ///
     /// Returns `MetricsError::Serde` if deserialization fails.
-    pub fn from_json(json: &str) -> Result<Vec<WorkloadMetrics>, MetricsError> {
+    pub fn from_json(json: &str) -> Result<Vec<Self>, MetricsError> {
         serde_json::from_str(json).map_err(MetricsError::from)
     }
 
@@ -67,7 +67,7 @@ impl WorkloadMetrics {
     ///
     /// Returns `MetricsError::Io` if any filesystem operation fails.
     /// Returns `MetricsError::Serde` if JSON serialization fails.
-    pub fn to_path<P: AsRef<Path>>(path: P, items: &[WorkloadMetrics]) -> Result<(), MetricsError> {
+    pub fn to_path<P: AsRef<Path>>(path: P, items: &[Self]) -> Result<(), MetricsError> {
         let path = path.as_ref();
 
         if let Some(parent) = path.parent() {
@@ -86,7 +86,7 @@ impl WorkloadMetrics {
     ///
     /// Returns `MetricsError::Io` if reading the file fails.
     /// Returns `MetricsError::Serde` if JSON deserialization fails.
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Vec<WorkloadMetrics>, MetricsError> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Vec<Self>, MetricsError> {
         let contents = fs::read_to_string(path)?;
         Ok(serde_json::from_str(&contents)?)
     }
