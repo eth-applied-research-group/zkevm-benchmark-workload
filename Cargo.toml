@@ -130,6 +130,7 @@ rayon = "1.7"
 hex = "0.4.3"
 thiserror = "2"
 serde_json = "*"
+serde_derive = "*"
 
 [patch.crates-io]
 sha2 = { git = "https://github.com/zkMIPS-patches/RustCrypto-hashes", package = "sha2", branch = "patch-sha2-0.10.8" }
