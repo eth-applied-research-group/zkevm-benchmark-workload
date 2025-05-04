@@ -1,7 +1,7 @@
 #![doc = include_str!("../../README.md")]
 
 use generate_stateless_witness::generate;
-use metrics::WorkloadMetrics;
+use zkevm_metrics::WorkloadMetrics;
 use zkm_sdk::{ProverClient, ZKMStdin};
 
 use std::collections::HashMap;

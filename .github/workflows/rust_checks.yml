@@ -31,4 +31,4 @@ jobs:
         run: cargo fmt --check --all
 
       - name: Run tests
-        run: cargo test -p metrics -p witness-generator
+        run: cargo test -p zkevm-metrics -p witness-generator

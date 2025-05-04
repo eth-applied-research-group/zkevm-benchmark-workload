@@ -4527,17 +4527,6 @@ checksum = "3d97bbf43eb4f088f8ca469930cde17fa036207c9a5e02ccc5107c4e8b17c964"
 
 [[package]]
 name = "metrics"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_derive",
- "serde_json",
- "tempfile",
- "thiserror 2.0.12",
-]
-
-[[package]]
-name = "metrics"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25dea7ac8057892855ec285c440160265225438c3c45072613c25a4b26e98ef5"
@@ -6529,7 +6518,7 @@ dependencies = [
  "alloy-signer",
  "alloy-signer-local",
  "derive_more 2.0.1",
- "metrics 0.24.2",
+ "metrics",
  "parking_lot",
  "pin-project",
  "rand 0.9.1",
@@ -6642,7 +6631,7 @@ dependencies = [
  "alloy-primitives",
  "derive_more 2.0.1",
  "eyre",
- "metrics 0.24.2",
+ "metrics",
  "page_size",
  "parking_lot",
  "reth-db-api",
@@ -6671,7 +6660,7 @@ dependencies = [
  "arbitrary",
  "bytes",
  "derive_more 2.0.1",
- "metrics 0.24.2",
+ "metrics",
  "modular-bitfield",
  "parity-scale-codec",
  "proptest",
@@ -6981,7 +6970,7 @@ name = "reth-metrics"
 version = "1.3.12"
 source = "git+https://github.com/kevaundray/reth?rev=1183a9af01ff491edd3c7a9e6cf574febce4f71d#1183a9af01ff491edd3c7a9e6cf574febce4f71d"
 dependencies = [
- "metrics 0.24.2",
+ "metrics",
  "metrics-derive",
 ]
 
@@ -7179,7 +7168,7 @@ dependencies = [
  "dashmap",
  "eyre",
  "itertools 0.14.0",
- "metrics 0.24.2",
+ "metrics",
  "notify",
  "parking_lot",
  "rayon",
@@ -7361,7 +7350,7 @@ dependencies = [
  "alloy-trie",
  "auto_impl",
  "itertools 0.14.0",
- "metrics 0.24.2",
+ "metrics",
  "reth-execution-errors",
  "reth-metrics",
  "reth-primitives-traits",
@@ -7421,7 +7410,7 @@ dependencies = [
  "alloy-primitives",
  "alloy-rlp",
  "auto_impl",
- "metrics 0.24.2",
+ "metrics",
  "reth-execution-errors",
  "reth-metrics",
  "reth-primitives-traits",
@@ -9092,9 +9081,9 @@ name = "succinct-host"
 version = "0.1.0"
 dependencies = [
  "dotenv",
- "metrics 0.1.0",
  "sp1-sdk",
  "witness-generator",
+ "zkevm-metrics",
 ]
 
 [[package]]
@@ -10960,6 +10949,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "zkevm-metrics"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "zkhash"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11153,8 +11153,8 @@ name = "zkm-host"
 version = "0.1.0"
 dependencies = [
  "dotenv",
- "metrics 0.1.0",
  "witness-generator",
+ "zkevm-metrics",
  "zkm-build 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
  "zkm-sdk",
 ]

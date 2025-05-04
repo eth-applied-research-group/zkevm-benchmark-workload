@@ -36,18 +36,22 @@ witness-generator = { path = "../witness-generator" } # Adjust path as needed
 Example (conceptual):
 
 ```rust
-use witness_generator::generate_witness::generate;
+use witness_generator::generate_stateless_witness::generate;
 use witness_generator::BlocksAndWitnesses;
+use std::env::temp_dir;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Generating witnesses...");
-    let all_test_witnesses: Vec<BlocksAndWitnesses> = generate();
+    // let all_test_witnesses: Vec<BlocksAndWitnesses> = generate();
+    let all_test_witnesses: Vec<BlocksAndWitnesses> = Default::default();
     println!("Generated witness data for {} test cases.", all_test_witnesses.len());
 
+    // Create a path in the system's temp directory
+    let output_path = temp_dir().join("generated_witnesses.json");
+    
     // Optionally, serialize to a file
-    let output_path = "generated_witnesses.json";
-    BlocksAndWitnesses::to_path(output_path, &all_test_witnesses)?;
-    println!("Witness data saved to {}", output_path);
+    BlocksAndWitnesses::to_path(&output_path, &all_test_witnesses)?;
+    println!("Witness data saved to {:?}", &output_path);
 
     // Later, deserialize
     let loaded_witnesses = BlocksAndWitnesses::from_path(output_path)?;

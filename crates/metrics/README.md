@@ -30,9 +30,10 @@ metrics = { path = "../metrics" } # Adjust path as needed
 Example:
 
 ```rust
-use metrics::WorkloadMetrics;
+use zkevm_metrics::WorkloadMetrics;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+use std::env::temp_dir;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let metrics_data = vec![
@@ -52,10 +53,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json_string = WorkloadMetrics::to_json(&metrics_data)?;
     println!("Serialized JSON: {}", json_string);
 
+    // Create a path in the system's temp directory
+    let output_path = temp_dir().join("metrics_output.json");
+
     // Write to file
-    let output_path = "metrics_output.json";
-    WorkloadMetrics::to_path(output_path, &metrics_data)?;
-    println!("Metrics written to {}", output_path);
+    WorkloadMetrics::to_path(&output_path, &metrics_data)?;
+    println!("Metrics written to {:?}", &output_path);
 
     // Read from file
     let read_metrics = WorkloadMetrics::from_path(output_path)?;
