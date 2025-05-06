@@ -1,13 +1,11 @@
 [package]
-name = "risc0guest"
+name = "risc0-guest"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-risc0-zkvm = { version = "^2.0.2", default-features = false, features = [
-    'std',
-] }
-reth-stateless.workspace = true
+alloy-primitives.workspace = true
+c-kzg = { version = "=2.1.0", default-features = true }
 reth-ethereum-primitives = { workspace = true, features = [
     "serde",
     "serde-bincode-compat",
@@ -16,4 +14,9 @@ reth-primitives-traits = { workspace = true, features = [
     "serde",
     "serde-bincode-compat",
 ] }
-alloy-primitives.workspace = true
+reth-stateless.workspace = true
+revm = { version = "22.0", features = ["std", "c-kzg", "blst", "bn"] }
+risc0-zkvm = { version = "^2.0.2", default-features = false, features = [
+    "std", "unstable"
+] }
+sha2 = "=0.10.8"

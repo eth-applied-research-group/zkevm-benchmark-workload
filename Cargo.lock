@@ -192,7 +192,7 @@ dependencies = [
  "ethereum_ssz",
  "ethereum_ssz_derive",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -675,7 +675,7 @@ dependencies = [
  "digest 0.10.7",
  "fnv",
  "merlin",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -1256,6 +1256,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
+name = "benchmark-runner"
+version = "0.1.0"
+dependencies = [
+ "rayon",
+ "witness-generator",
+ "zkevm-metrics",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1540,7 +1549,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf88ba1141d185c399bee5288d850d63b8369520c1eafc32a0430b5b6c287bf4"
 dependencies = [
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "tinyvec",
 ]
 
@@ -1818,7 +1827,7 @@ dependencies = [
  "hmac",
  "k256",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "thiserror 1.0.69",
 ]
 
@@ -1834,7 +1843,7 @@ dependencies = [
  "once_cell",
  "pbkdf2 0.12.2",
  "rand 0.8.5",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "thiserror 1.0.69",
 ]
 
@@ -1853,7 +1862,7 @@ dependencies = [
  "ripemd",
  "serde",
  "serde_derive",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "sha3",
  "thiserror 1.0.69",
 ]
@@ -2581,8 +2590,7 @@ checksum = "1c7a8fb8a9fbf66c1f703fe16184d10ca0ee9d23be5b4436400408ba54a95005"
 [[package]]
 name = "ecdsa"
 version = "0.16.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee27f32b5c5292967d2d4a9d7f1e0b0aed2c15daded5a60300e4abb9d8020bca"
+source = "git+https://github.com/sp1-patches/signatures.git?tag=patch-16.9-sp1-4.1.0#1880299a48fe7ef249edaa616fd411239fb5daf1"
 dependencies = [
  "der",
  "digest 0.10.7",
@@ -2868,7 +2876,7 @@ dependencies = [
  "scrypt",
  "serde",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "sha3",
  "thiserror 1.0.69",
  "uuid 0.8.2",
@@ -3173,7 +3181,7 @@ dependencies = [
  "eth-keystore",
  "ethers-core",
  "rand 0.8.5",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "thiserror 1.0.69",
  "tracing",
 ]
@@ -3827,7 +3835,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_arrays 0.1.0",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "static_assertions",
  "subtle",
  "unroll",
@@ -4069,18 +4077,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589533453244b0995c858700322199b2becb13b627df2851f64a2775d024abcf"
 dependencies = [
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "host"
-version = "0.1.0"
-dependencies = [
- "methods",
- "risc0-zkvm",
- "serde",
- "tracing-subscriber 0.3.19",
- "witness-generator",
- "zkevm-metrics",
 ]
 
 [[package]]
@@ -4716,16 +4712,17 @@ dependencies = [
 [[package]]
 name = "k256"
 version = "0.13.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6e3919bbaa2945715f0bb6d3934a173d1e9a59ac23767fbaaef277265a7411b"
+source = "git+https://github.com/sp1-patches/elliptic-curves?tag=patch-k256-13.4-sp1-4.1.0#dbb97456cb6bda207eb212011ac834582263e88b"
 dependencies = [
  "cfg-if",
  "ecdsa",
  "elliptic-curve",
+ "hex",
  "once_cell",
  "serdect",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "signature",
+ "sp1-lib",
 ]
 
 [[package]]
@@ -4776,7 +4773,7 @@ dependencies = [
  "ff 0.13.1",
  "hex",
  "serde_arrays 0.2.0",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "sp1_bls12_381",
  "spin 0.9.8",
 ]
@@ -6587,13 +6584,14 @@ checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 [[package]]
 name = "p256"
 version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c9863ad85fa8f4460f9c48cb909d38a0d689dba1f6f6988a5e3e0d31071bcd4b"
+source = "git+https://github.com/sp1-patches/elliptic-curves?tag=patch-p256-13.2-sp1-4.1.0#f527279b192e0d1b293108af2faee513495411ca"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
+ "hex",
  "primeorder",
- "sha2 0.10.9",
+ "sha2 0.10.8",
+ "sp1-lib",
 ]
 
 [[package]]
@@ -7646,7 +7644,7 @@ dependencies = [
  "digest 0.10.7",
  "hmac",
  "password-hash",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -7899,9 +7897,8 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.13.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "353e1ca18966c16d9deb1c69278edbc5f194139612772bd9537af60ac231e1e6"
+version = "0.13.1"
+source = "git+https://github.com/sp1-patches/elliptic-curves?tag=patch-p256-13.2-sp1-4.1.0#f527279b192e0d1b293108af2faee513495411ca"
 dependencies = [
  "elliptic-curve",
 ]
@@ -8814,7 +8811,7 @@ dependencies = [
  "reth-payload-primitives",
  "reth-primitives-traits",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -9592,7 +9589,8 @@ dependencies = [
  "revm-primitives",
  "ripemd",
  "secp256k1",
- "sha2 0.10.9",
+ "sha2 0.10.8",
+ "substrate-bn",
 ]
 
 [[package]]
@@ -9621,8 +9619,7 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8dd2a808d456c4a54e300a23e9f5a67e122c3024119acbfd73e3bf664491cb2"
+source = "git+https://github.com/sp1-patches/signatures.git?tag=patch-16.9-sp1-4.1.0#1880299a48fe7ef249edaa616fd411239fb5daf1"
 dependencies = [
  "hmac",
  "subtle",
@@ -9791,6 +9788,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "risc0-guest"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "c-kzg",
+ "reth-ethereum-primitives",
+ "reth-primitives-traits",
+ "reth-stateless",
+ "revm",
+ "risc0-zkvm",
+ "sha2 0.10.8",
+]
+
+[[package]]
+name = "risc0-host"
+version = "0.1.0"
+dependencies = [
+ "benchmark-runner",
+ "methods",
+ "risc0-zkvm",
+ "serde",
+ "tracing-subscriber 0.3.19",
+ "witness-generator",
+ "zkevm-metrics",
+]
+
+[[package]]
 name = "risc0-zkos-v1compat"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9820,7 +9844,7 @@ dependencies = [
  "risc0-core",
  "risc0-zkvm-platform",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "stability",
  "tracing",
 ]
@@ -9856,7 +9880,7 @@ dependencies = [
  "rzup",
  "semver 1.0.26",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "stability",
  "tempfile",
  "tracing",
@@ -9874,17 +9898,6 @@ dependencies = [
  "getrandom 0.3.2",
  "libm",
  "stability",
-]
-
-[[package]]
-name = "risc0guest"
-version = "0.1.0"
-dependencies = [
- "alloy-primitives",
- "reth-ethereum-primitives",
- "reth-primitives-traits",
- "reth-stateless",
- "risc0-zkvm",
 ]
 
 [[package]]
@@ -10279,7 +10292,7 @@ dependencies = [
  "hmac",
  "pbkdf2 0.11.0",
  "salsa20",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -10591,9 +10604,8 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.10.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7507d819769d01a365ab707794a4084392c824f54a7a6a7862f8c3d0892b283"
+version = "0.10.8"
+source = "git+https://github.com/sp1-patches/RustCrypto-hashes?tag=patch-sha2-0.10.8-sp1-4.0.0#1f224388fdede7cef649bce0d63876d1a9e3f515"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -10603,8 +10615,7 @@ dependencies = [
 [[package]]
 name = "sha3"
 version = "0.10.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
+source = "git+https://github.com/sp1-patches/RustCrypto-hashes?tag=patch-sha3-0.10.8-sp1-4.0.0#8f6d303c0861ba7e5adcc36207c0f41fe5edaabc"
 dependencies = [
  "digest 0.10.7",
  "keccak",
@@ -10948,6 +10959,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3ef88f90458b6116da164e9c4c4596c49c8cca1944bfe02850b48b232a06b90"
 dependencies = [
  "bincode",
+ "elliptic-curve",
  "serde",
  "sp1-primitives",
 ]
@@ -10969,7 +10981,7 @@ dependencies = [
  "p3-poseidon2 0.2.2-succinct",
  "p3-symmetric 0.2.2-succinct",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -11002,7 +11014,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serial_test",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "sp1-core-executor",
  "sp1-core-machine",
  "sp1-primitives",
@@ -11145,7 +11157,7 @@ dependencies = [
  "p3-symmetric 0.2.2-succinct",
  "serde",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "sp1-core-machine",
  "sp1-recursion-compiler",
  "sp1-stark",
@@ -11247,7 +11259,7 @@ dependencies = [
  "lazy_static",
  "libm",
  "rand 0.8.5",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "sp1-lib",
  "sp1-primitives",
 ]
@@ -11392,6 +11404,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-bn"
+version = "0.6.0"
+source = "git+https://github.com/sp1-patches/bn?tag=patch-0.6.0-sp1-4.0.0#1bd84110963662fae88baa5ad07c9ab92b6acdbb"
+dependencies = [
+ "bytemuck",
+ "byteorder",
+ "cfg-if",
+ "crunchy",
+ "lazy_static",
+ "num-bigint 0.4.6",
+ "rand 0.8.5",
+ "rustc-hex",
+ "sp1-lib",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11415,6 +11443,7 @@ dependencies = [
 name = "succinct-host"
 version = "0.1.0"
 dependencies = [
+ "benchmark-runner",
  "dotenv",
  "sp1-sdk",
  "witness-generator",
@@ -11435,7 +11464,7 @@ dependencies = [
  "semver 1.0.26",
  "serde",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "thiserror 1.0.69",
  "url",
  "zip",
@@ -13389,7 +13418,7 @@ dependencies = [
  "pasta_curves 0.5.1",
  "rand 0.8.5",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "sha3",
  "subtle",
 ]
@@ -13471,7 +13500,7 @@ dependencies = [
  "rrs-succinct",
  "serde",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "strum 0.26.3",
  "strum_macros 0.26.4",
  "test-artifacts",
@@ -13586,6 +13615,7 @@ dependencies = [
 name = "zkm-host"
 version = "0.1.0"
 dependencies = [
+ "benchmark-runner",
  "dotenv",
  "witness-generator",
  "zkevm-metrics",
@@ -13602,7 +13632,7 @@ dependencies = [
  "cfg-if",
  "elliptic-curve",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -13614,7 +13644,7 @@ dependencies = [
  "cfg-if",
  "elliptic-curve",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -13632,7 +13662,7 @@ dependencies = [
  "p3-poseidon2 0.1.0 (git+https://github.com/zkMIPS/Plonky3)",
  "p3-symmetric 0.1.0 (git+https://github.com/zkMIPS/Plonky3)",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
 ]
 
 [[package]]
@@ -13791,7 +13821,7 @@ dependencies = [
  "p3-symmetric 0.1.0 (git+https://github.com/zkMIPS/Plonky3)",
  "serde",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "tempfile",
  "zkm-core-machine",
  "zkm-recursion-compiler",
@@ -13898,7 +13928,7 @@ dependencies = [
  "lazy_static",
  "rand 0.8.5",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "zkm-lib 1.0.0 (git+https://github.com/kevaundray/zkMIPS.git?branch=kw%2Fpatch-alloy)",
 ]
 
@@ -13914,7 +13944,7 @@ dependencies = [
  "libm",
  "rand 0.8.5",
  "serde",
- "sha2 0.10.9",
+ "sha2 0.10.8",
  "zkm-lib 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
 ]
 

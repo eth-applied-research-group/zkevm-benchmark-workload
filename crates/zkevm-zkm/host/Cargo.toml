@@ -13,6 +13,7 @@ license.workspace = true
 zkm-sdk = { git = "https://github.com/kevaundray/zkMIPS.git", branch = "kw/patch-alloy" }
 witness-generator.workspace = true
 zkevm-metrics.workspace = true
+benchmark-runner.workspace = true
 dotenv = "0.15.0"
 
 [build-dependencies]
