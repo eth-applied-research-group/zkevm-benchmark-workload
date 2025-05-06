@@ -1,4 +1,4 @@
-use openvm::io::{read, reveal_u32};
+use openvm::io::read;
 
 extern crate alloc;
 
