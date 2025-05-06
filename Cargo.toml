@@ -13,7 +13,7 @@ members = [
     "crates/zkevm-risc0/host",
     "crates/zkevm-risc0/methods",
     "crates/zkevm-risc0/methods/guest",
-    #openvm
+    # openvm
     "crates/zkevm-openvm/program",
     "crates/zkevm-openvm/host",
 ]
