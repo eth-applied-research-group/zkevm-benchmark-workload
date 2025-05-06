@@ -31,7 +31,7 @@ fn main() {
         "zkm",
         |blockchain_corpus: &BlocksAndWitnesses, elf_path: &'static [u8]| {
             let mut reports = Vec::new();
-            let name = blockchain_corpus.name.clone();
+            let name = &blockchain_corpus.name;
             let num_blocks_in_corpus = blockchain_corpus.blocks_and_witnesses.len();
 
             for client_input in &blockchain_corpus.blocks_and_witnesses {

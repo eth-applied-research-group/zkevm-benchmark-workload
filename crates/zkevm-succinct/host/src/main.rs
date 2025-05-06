@@ -32,7 +32,7 @@ fn main() {
         "succinct",
         |blockchain_corpus: &BlocksAndWitnesses, elf_path: &'static [u8]| {
             let mut reports = Vec::new();
-            let name = blockchain_corpus.name.clone();
+            let name = &blockchain_corpus.name;
 
             for client_input in &blockchain_corpus.blocks_and_witnesses {
                 let block_number = client_input.block.number;
