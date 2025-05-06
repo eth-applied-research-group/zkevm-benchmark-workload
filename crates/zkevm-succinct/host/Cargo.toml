@@ -9,6 +9,7 @@ license.workspace = true
 sp1-sdk = "4.2.0"
 witness-generator.workspace = true
 zkevm-metrics.workspace = true
+benchmark-runner.workspace = true
 dotenv = "0.15.0"
 
 [lints]
