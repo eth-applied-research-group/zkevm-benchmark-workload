@@ -6,4 +6,4 @@ edition = "2021"
 [dependencies]
 rayon.workspace = true
 witness-generator.workspace = true
-metrics.workspace = true
+zkevm-metrics.workspace = true

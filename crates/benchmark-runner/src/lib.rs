@@ -1,6 +1,6 @@
-use metrics::WorkloadMetrics;
 use rayon::prelude::*;
 use witness_generator::{generate_stateless_witness, BlocksAndWitnesses};
+use zkevm_metrics::WorkloadMetrics;
 
 pub fn run_benchmark<F>(elf_path: &'static [u8], metrics_path_prefix: &str, zkvm_executor: F)
 where
