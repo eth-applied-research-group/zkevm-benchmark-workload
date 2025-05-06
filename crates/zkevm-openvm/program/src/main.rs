@@ -9,8 +9,8 @@ use tracing_subscriber::fmt;
 /// Entry point.
 pub fn main() {
     println!("start read_input");
-    let input : ClientInput = read();
-    let network : ForkSpec = read();
+    let input: ClientInput = read();
+    let network: ForkSpec = read();
     let chain_spec = Arc::new(network.into());
     println!("end read_input");
 
