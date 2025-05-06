@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+
+use benchmark_runner::run_benchmark;
 use methods::RISC0_GUEST_ELF;
 use risc0_zkvm::{default_prover, ExecutorEnv};
-use witness_generator::generate_stateless_witness::generate;
+use witness_generator::BlocksAndWitnesses;
+use zkevm_metrics::WorkloadMetrics;
 
 fn main() {
     // Initialize tracing. In order to view logs, run `RUST_LOG=info cargo run`
@@ -9,7 +13,7 @@ fn main() {
         .init();
 
     run_benchmark(
-        RISC0GUEST_ELF,
+        RISC0_GUEST_ELF,
         "risc0",
         |blockchain_corpus: &BlocksAndWitnesses, _elf_data: &'static [u8]| {
             // Obtain the default prover.
@@ -29,7 +33,7 @@ fn main() {
                     .unwrap();
 
                 // Proof information by proving the specified ELF binary.
-                let _ = prover.prove(env, RISC0GUEST_ELF).unwrap();
+                let _ = prover.prove(env, RISC0_GUEST_ELF).unwrap();
 
                 // RISC0 receipt does not provide detailed region cycle counts by default.
                 // We'll use an empty HashMap for region_cycles.
