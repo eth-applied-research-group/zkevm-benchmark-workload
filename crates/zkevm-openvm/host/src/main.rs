@@ -23,7 +23,7 @@ fn main() -> Result<()> {
     let guest_path = Path::new("../program");
     let elf: Elf = sdk.build(GuestOptions::default(), guest_path, &Default::default())?;
 
-    // ---------- 3 · transpile and execute ---------------------------------
+    // Transpile and execute
     let exe = sdk.transpile(elf, vm_cfg.transpiler())?;
 
     let generated = generate();
