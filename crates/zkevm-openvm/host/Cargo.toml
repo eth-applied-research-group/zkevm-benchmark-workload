@@ -1,0 +1,18 @@
+[package]
+name = "openvm-host"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+eyre = "0.6"
+openvm-sdk = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.1.1", default-features = false }
+openvm-build = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.1.1", default-features = false }
+openvm-transpiler = { git = "https://github.com/openvm-org/openvm.git", tag = "v1.1.1", default-features = false }
+
+witness-generator.workspace = true
+zkevm-metrics.workspace = true
+
+[lints]
+workspace = true
