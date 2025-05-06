@@ -11,38 +11,44 @@ fn main() {
     // Obtain the default prover.
     let prover = default_prover();
 
-    let generated = generate();
-    let num_corpuses = generated.len();
+    run_benchmark(
+        RISC0GUEST_ELF,
+        "risc0",
+        |blockchain_corpus: &BlocksAndWitnesses, _elf_data: &'static [u8]| {
+            let mut reports = Vec::new();
+            let corpus_name = &blockchain_corpus.name;
+            let num_blocks_in_corpus = blockchain_corpus.blocks_and_witnesses.len();
 
-    for (corpus_id, blockchain_corpus) in generated.into_iter().enumerate() {
-        // let mut reports = Vec::new();
-        // Iterate each block in the mini blockchain
-        let name = blockchain_corpus.name.clone();
-        let num_blocks_in_corpus = blockchain_corpus.blocks_and_witnesses.len();
+            for (block_id, client_input) in
+                blockchain_corpus.blocks_and_witnesses.iter().enumerate()
+            {
+                let block_number = client_input.block.number;
 
-        println!("Processing corpus {} / {num_corpuses}", corpus_id + 1);
-        println!("Corpus name: {name}");
-        println!("Num blocks in corpus: {num_blocks_in_corpus}\n");
+                let env = ExecutorEnv::builder()
+                    .write(&client_input)
+                    .unwrap()
+                    .write(&blockchain_corpus.network)
+                    .unwrap()
+                    .build()
+                    .unwrap();
 
-        for (block_id, client_input) in blockchain_corpus.blocks_and_witnesses.iter().enumerate() {
-            println!(
-                "   Processing block {} / {num_blocks_in_corpus}",
-                block_id + 1
-            );
+                // Proof information by proving the specified ELF binary.
+                let prove_info = prover.prove(env, RISC0GUEST_ELF).unwrap();
+                let receipt = prove_info.receipt;
+                let total_num_cycles = receipt.cycles;
 
-            let block_number = client_input.block.number;
+                // RISC0 receipt does not provide detailed region cycle counts by default.
+                // We'll use an empty HashMap for region_cycles.
+                let region_cycles: HashMap<String, u64> = HashMap::new();
 
-            let env = ExecutorEnv::builder()
-                .write(&client_input)
-                .unwrap()
-                .write(&blockchain_corpus.network)
-                .unwrap()
-                .build()
-                .unwrap();
-
-            // Proof information by proving the specified ELF binary.
-            // This struct contains the receipt along with statistics about execution of the guest
-            let _prove_info = prover.prove(env, RISC0_GUEST_ELF).unwrap();
-        }
-    }
+                let metrics = WorkloadMetrics {
+                    name: format!("{}-{}", corpus_name, block_number),
+                    total_num_cycles,
+                    region_cycles,
+                };
+                reports.push(metrics);
+            }
+            reports
+        },
+    );
 }
