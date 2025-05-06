@@ -8,5 +8,6 @@ methods = { path = "../methods" }
 risc0-zkvm = { version = "^2.0.2", features = ["unstable"] }
 witness-generator.workspace = true
 zkevm-metrics.workspace = true
+benchmark-runner.workspace = true
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
