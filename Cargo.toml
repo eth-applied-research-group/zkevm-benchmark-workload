@@ -9,6 +9,10 @@ members = [
     # zkm
     "crates/zkevm-zkm/host",
     "crates/zkevm-zkm/program",
+    # risc0
+    "crates/zkevm-risc0/host",
+    "crates/zkevm-risc0/methods",
+    "crates/zkevm-risc0/methods/guest",
 ]
 resolver = "2"
 
@@ -133,10 +137,3 @@ serde_json = "*"
 serde_derive = "*"
 
 [patch.crates-io]
-sha2 = { git = "https://github.com/zkMIPS-patches/RustCrypto-hashes", package = "sha2", branch = "patch-sha2-0.10.8" }
-curve25519-dalek = { git = "https://github.com/zkMIPS-patches/curve25519-dalek", branch = "patch-4.1.3" }
-curve25519-dalek-ng = { git = "https://github.com/zkMIPS-patches/curve25519-dalek-ng", branch = "patch-4.1.1" }
-secp256k1 = { git = "https://github.com/zkMIPS-patches/rust-secp256k1", branch = "patch-0.29.1" }
-substrate-bn = { git = "https://github.com/zkMIPS-patches/bn", branch = "patch-0.6.0" }
-rsa = { git = "https://github.com/zkMIPS-patches/RustCrypto-RSA.git", branch = "patch-rsa-0.9.6" }
-kzg-rs = { git = "https://github.com/zkMIPS-patches/kzg-rs.git", branch = "zkMIPS" }
