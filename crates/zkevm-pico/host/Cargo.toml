@@ -1,0 +1,12 @@
+[package]
+name = "pico-host"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pico-sdk = { git = "https://github.com/brevis-network/pico" }
+bincode = "1.3.3"
+serde = { version = "1.0.205", features = ["derive"] }
+benchmark-runner.workspace = true
+zkevm-metrics.workspace = true
+witness-generator.workspace = true
