@@ -1,0 +1,12 @@
+[package]
+name = "jolt-host"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jolt-sdk = { git = "https://github.com/a16z/jolt", features = ["host"] }
+ark-serialize = "0.5.0"
+jolt-guest = { path = "../program" }
+
+[features]
+icicle = ["jolt-sdk/icicle"]
