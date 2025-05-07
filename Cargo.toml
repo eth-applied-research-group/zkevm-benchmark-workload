@@ -16,6 +16,9 @@ members = [
     # openvm
     "crates/zkevm-openvm/program",
     "crates/zkevm-openvm/host",
+    # jolt
+    "crates/zkevm-jolt/program",
+    "crates/zkevm-jolt/host",
 ]
 resolver = "2"
 
@@ -141,3 +144,6 @@ serde_json = "*"
 serde_derive = "*"
 
 [patch.crates-io]
+ark-ff = { git = "https://github.com/a16z/arkworks-algebra", branch = "v0.5.0-optimize-mul-u64" }
+ark-ec = { git = "https://github.com/a16z/arkworks-algebra", branch = "v0.5.0-optimize-mul-u64" }
+ark-serialize = { git = "https://github.com/a16z/arkworks-algebra", branch = "v0.5.0-optimize-mul-u64" }
