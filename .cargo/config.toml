@@ -5,3 +5,4 @@ CARGO_WORKSPACE_DIR = { value = "", relative = true }
 succinct = ["run", "-p", "xtask", "--", "succinct", "--"]
 zkm = ["run", "-p", "xtask", "--", "zkm", "--"]
 risc0 = ["run", "-p", "xtask", "--", "risc0", "--"]
+pico = ["run", "-p", "xtask", "--", "pico", "--"]

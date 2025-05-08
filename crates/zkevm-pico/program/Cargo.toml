@@ -1,0 +1,17 @@
+[package]
+name = "pico-guest"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+pico-sdk = { git = "https://github.com/brevis-network/pico" }
+reth-stateless.workspace = true
+reth-ethereum-primitives = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+reth-primitives-traits = { workspace = true, features = [
+    "serde",
+    "serde-bincode-compat",
+] }
+alloy-primitives.workspace = true
