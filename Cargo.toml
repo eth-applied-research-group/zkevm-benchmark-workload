@@ -16,6 +16,9 @@ members = [
     # openvm
     "crates/zkevm-openvm/program",
     "crates/zkevm-openvm/host",
+    # pico
+    "crates/zkevm-pico/program",
+    "crates/zkevm-pico/host",
 ]
 resolver = "2"
 

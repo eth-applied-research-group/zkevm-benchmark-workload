@@ -53,7 +53,7 @@ pub fn generate() -> Vec<BlocksAndWitnesses> {
             // testopcode_Prague
             // This is why we have `tests`.
             .tests
-            .par_iter()
+            .iter()
             // TODO: We shouldn't need this since we are generating specific tests and have control
             // TODO: over the network.
             .filter(|(_, case)| !BlockchainTestCase::excluded_fork(case.network))
