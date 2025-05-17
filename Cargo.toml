@@ -7,15 +7,15 @@ members = [
     "crates/zkevm-succinct/host",
     "crates/zkevm-succinct/program",
     # zkm
-    "crates/zkevm-zkm/host",
-    "crates/zkevm-zkm/program",
+    # "crates/zkevm-zkm/host",
+    # "crates/zkevm-zkm/program",
     # risc0
-    "crates/zkevm-risc0/host",
-    "crates/zkevm-risc0/methods",
-    "crates/zkevm-risc0/methods/guest",
+    # "crates/zkevm-risc0/host",
+    # "crates/zkevm-risc0/methods",
+    # "crates/zkevm-risc0/methods/guest",
     # openvm
-    "crates/zkevm-openvm/program",
-    "crates/zkevm-openvm/host",
+    # "crates/zkevm-openvm/program",
+    # "crates/zkevm-openvm/host",
 ]
 resolver = "2"
 
@@ -117,11 +117,11 @@ benchmark-runner = { path = "crates/benchmark-runner" }
 # reth
 # branch is kw/stateless-experiment-zkvm-benchmarks
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
-ef-tests = { git = "https://github.com/kevaundray/reth", rev = "96de1f325d8835d589bd505b9f94507904f20963" }
-reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "96de1f325d8835d589bd505b9f94507904f20963" }
-reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "96de1f325d8835d589bd505b9f94507904f20963" }
-reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "96de1f325d8835d589bd505b9f94507904f20963" }
-reth-chainspec = { git = "https://github.com/kevaundray/reth", rev = "96de1f325d8835d589bd505b9f94507904f20963" }
+ef-tests = { git = "https://github.com/kevaundray/reth", rev = "16af290870585a857e3491e8774de5232dd95aac" }
+reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "16af290870585a857e3491e8774de5232dd95aac" }
+reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "16af290870585a857e3491e8774de5232dd95aac" }
+reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "16af290870585a857e3491e8774de5232dd95aac" }
+reth-chainspec = { git = "https://github.com/kevaundray/reth", rev = "16af290870585a857e3491e8774de5232dd95aac" }
 
 # alloy
 alloy-primitives = { version = "1.0.0", default-features = false, features = [
