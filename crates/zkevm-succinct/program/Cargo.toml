@@ -8,6 +8,7 @@ license.workspace = true
 [dependencies]
 sp1-zkvm = "4.2.0"
 reth-stateless.workspace = true
+alloy-genesis.workspace = true
 reth-ethereum-primitives = { workspace = true, features = [
     "serde",
     "serde-bincode-compat",
