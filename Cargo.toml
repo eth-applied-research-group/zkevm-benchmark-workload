@@ -7,8 +7,8 @@ members = [
     "crates/zkevm-succinct/host",
     "crates/zkevm-succinct/program",
     # zkm
-    # "crates/zkevm-zkm/host",
-    # "crates/zkevm-zkm/program",
+    "crates/zkevm-zkm/host",
+    "crates/zkevm-zkm/program",
     # risc0
     "crates/zkevm-risc0/host",
     "crates/zkevm-risc0/methods",
