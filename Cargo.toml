@@ -16,12 +16,24 @@ members = [
     # openvm
     "crates/zkevm-openvm/program",
     "crates/zkevm-openvm/host",
+    # powdr
+    # "crates/zkevm-powdr/program",
+    # "crates/zkevm-powdr/host",
+
 ]
+# Powdr compilation won't allow us to have it in the workspace
+# Seems to be a TODO in powder code.
+# thread 'main' panicked at /Users/kev/.cargo/git/checkouts/powdr-fb0e233c2e750fd6/340858e/riscv/src/lib.rs:251:5:
+# assertion `left == right` failed
+#   left: 12
+#  right: 1
+exclude = ["crates/zkevm-powdr/program", "crates/zkevm-powdr/host"]
+
 resolver = "2"
 
 [workspace.package]
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 
