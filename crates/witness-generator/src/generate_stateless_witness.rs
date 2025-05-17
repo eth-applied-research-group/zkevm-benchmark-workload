@@ -2,7 +2,6 @@ use ef_tests::{
     Case,
     cases::blockchain_test::{BlockchainTestCase, run_case},
 };
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use reth_chainspec::ChainSpec;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -54,10 +53,7 @@ pub fn generate() -> Vec<BlocksAndWitnesses> {
             // testopcode_Prague
             // This is why we have `tests`.
             .tests
-            .par_iter()
-            // TODO: We shouldn't need this since we are generating specific tests and have control
-            // TODO: over the network.
-            .filter(|(_, case)| !BlockchainTestCase::excluded_fork(case.network))
+            .iter()
             .map(|(name, case)| BlocksAndWitnesses {
                 name: name.to_string(),
                 blocks_and_witnesses: run_case(case)
