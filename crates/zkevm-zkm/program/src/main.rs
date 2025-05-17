@@ -6,6 +6,7 @@ zkm_zkvm::entrypoint!(main);
 extern crate alloc;
 
 use alloc::sync::Arc;
+use alloy_genesis::Genesis;
 use reth_stateless::{ClientInput, fork_spec::ForkSpec, validation::stateless_validation};
 use tracing_subscriber::fmt;
 
@@ -15,8 +16,8 @@ pub fn main() {
 
     println!("cycle-tracker-report-start: read_input");
     let input = zkm_zkvm::io::read::<ClientInput>();
-    let network = zkm_zkvm::io::read::<ForkSpec>();
-    let chain_spec = Arc::new(network.into());
+    let genesis = zkm_zkvm::io::read::<Genesis>();
+    let chain_spec = Arc::new(genesis.into());
     println!("cycle-tracker-report-end: read_input");
 
     println!("cycle-tracker-report-start: validation");
