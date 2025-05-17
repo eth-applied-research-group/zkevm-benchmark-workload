@@ -1,10 +1,10 @@
 #![doc = include_str!("../../README.md")]
 
 use benchmark_runner::run_benchmark;
-use sp1_sdk::{ProverClient, SP1Stdin};
 use std::collections::HashMap;
 use witness_generator::BlocksAndWitnesses;
 use zkevm_metrics::WorkloadMetrics;
+use zkvm_interface::{Input, zkVM};
 
 /// Path to the compiled RISC-V ELF file for the `succinct-guest` crate.
 ///
@@ -25,8 +25,6 @@ fn main() {
     dotenv::dotenv().ok();
 
     // Setup the prover client.
-    let client = ProverClient::from_env();
-
     run_benchmark(
         STATELESS_ELF,
         "succinct",
@@ -34,20 +32,20 @@ fn main() {
             let mut reports = Vec::new();
             let name = &blockchain_corpus.name;
 
+            let zkvm = ere_sp1::EreSP1::new(elf_path.to_vec());
             for client_input in &blockchain_corpus.blocks_and_witnesses {
                 let block_number = client_input.block.number;
-                let mut stdin = SP1Stdin::new();
-                stdin.write(client_input);
-                stdin.write(&blockchain_corpus.network);
+                let mut stdin = Input::new();
+                stdin.write(client_input).unwrap();
+                stdin.write(&blockchain_corpus.network).unwrap();
 
-                let (_, report) = client.execute(elf_path, &stdin).run().unwrap();
+                let report = zkvm.execute(&stdin).unwrap();
 
-                let total_num_cycles = report.total_instruction_count();
-                let region_cycles: HashMap<_, _> = report.cycle_tracker.into_iter().collect();
+                let region_cycles: HashMap<_, _> = report.region_cycles.into_iter().collect();
 
                 let metrics = WorkloadMetrics {
                     name: format!("{}-{}", name, block_number),
-                    total_num_cycles,
+                    total_num_cycles: report.total_num_cycles,
                     region_cycles,
                 };
                 reports.push(metrics);
