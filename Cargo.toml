@@ -115,13 +115,13 @@ zkevm-metrics = { path = "crates/metrics" }
 benchmark-runner = { path = "crates/benchmark-runner" }
 
 
-# branch is kw/stateless-experiment-zkvm-benchmarks
+# branch is kw/zkevm-benchmark-workload-repo
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
-ef-tests = { git = "https://github.com/kevaundray/reth", rev = "80f200c8a0035c8eb70776241f32ce4797004efb" }
-reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "80f200c8a0035c8eb70776241f32ce4797004efb" }
-reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "80f200c8a0035c8eb70776241f32ce4797004efb" }
-reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "80f200c8a0035c8eb70776241f32ce4797004efb" }
-reth-chainspec = { git = "https://github.com/kevaundray/reth", rev = "80f200c8a0035c8eb70776241f32ce4797004efb" }
+ef-tests = { git = "https://github.com/kevaundray/reth", rev = "177578a5927a0b3f9087a1588e3334dbc2dd3204" }
+reth-ethereum-primitives = { git = "https://github.com/kevaundray/reth", rev = "177578a5927a0b3f9087a1588e3334dbc2dd3204" }
+reth-primitives-traits = { git = "https://github.com/kevaundray/reth", rev = "177578a5927a0b3f9087a1588e3334dbc2dd3204" }
+reth-stateless = { git = "https://github.com/kevaundray/reth", rev = "177578a5927a0b3f9087a1588e3334dbc2dd3204" }
+reth-chainspec = { git = "https://github.com/kevaundray/reth", rev = "177578a5927a0b3f9087a1588e3334dbc2dd3204" }
 alloy-genesis = { version = "1.0.3", default-features = false }
 
 # alloy
