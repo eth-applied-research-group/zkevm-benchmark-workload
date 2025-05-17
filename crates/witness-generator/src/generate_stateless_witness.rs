@@ -3,6 +3,7 @@ use ef_tests::{
     cases::blockchain_test::{BlockchainTestCase, run_case},
 };
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use reth_chainspec::ChainSpec;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
@@ -64,7 +65,7 @@ pub fn generate() -> Vec<BlocksAndWitnesses> {
                     .into_iter()
                     .map(|(block, witness)| ClientInput { block, witness })
                     .collect(),
-                network: case.network.into(),
+                network: ChainSpec::from(case.network).genesis,
             })
             .collect();
         blocks_and_witnesses.extend(blockchain_case);
