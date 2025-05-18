@@ -17,6 +17,8 @@ members = [
     "ere-guests/risc0/guest", #TODO: fix so we have one crate
     "ere-guests/openvm",
     "ere-guests/zkm",
+    # Ere host crate
+    "crates/ere-hosts",
 ]
 resolver = "2"
 
