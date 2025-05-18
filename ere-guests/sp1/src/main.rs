@@ -1,5 +1,4 @@
 #![no_main]
-#![doc = include_str!("../../README.md")]
 
 extern crate alloc;
 

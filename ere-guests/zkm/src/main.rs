@@ -1,6 +1,5 @@
-// #![no_std]
 #![no_main]
-#![doc = include_str!("../../README.md")]
+
 zkm_zkvm::entrypoint!(main);
 
 extern crate alloc;
