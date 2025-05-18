@@ -19,6 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+// TODO: Eventually move this into benchmark_runner
 fn benchmark<C, V>(host_name: &str, guest_dir: &str) -> Result<(), Box<dyn std::error::Error>>
 where
     C: Compiler,
@@ -30,12 +31,16 @@ where
 
     let path = PathBuf::from(guest_dir);
 
+    // Compile program and generate proving + verifying key
     let program = C::compile(&path)?;
     let zkvm = V::new(program);
 
+    // Generate test corpus
     let corpuses = generate_stateless_witness::generate();
+
+    // Iterate through test corpus and generate reports
     for bw in &corpuses {
-        println!("  • {} ({} blocks)", bw.name, bw.blocks_and_witnesses.len());
+        println!(" {} ({} blocks)", bw.name, bw.blocks_and_witnesses.len());
 
         let mut reports = Vec::new();
         for ci in &bw.blocks_and_witnesses {
