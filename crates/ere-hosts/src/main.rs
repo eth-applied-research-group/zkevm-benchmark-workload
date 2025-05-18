@@ -1,47 +1,67 @@
-use benchmark_runner::run_benchmark;
-use std::collections::HashMap;
-use witness_generator::{generate_stateless_witness, BlocksAndWitnesses};
+//! Binary for benchmarking different Ere compatible zkVMs
+
+use std::{collections::HashMap, path::PathBuf};
+use witness_generator::generate_stateless_witness;
 use zkevm_metrics::WorkloadMetrics;
+use zkvm_interface::{Compiler, Input, zkVM};
 
 /// Main entry point for the host benchmarker
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
 
-    // List all of the supported ere hosts that we want to benchmark
-    let hosts = vec![("sp1", "ere-guests/sp1")];
+    // one line per host: no inner-loop duplication
+    benchmark::<ere_sp1::RV32_IM_SUCCINCT_ZKVM_ELF, ere_sp1::EreSP1>(
+        "sp1",
+        concat!(env!("CARGO_WORKSPACE_DIR"), "ere-guests/sp1"),
+    )?;
 
-    // Generate corpus
-    let generated_corpuses = generate_stateless_witness::generate();
+    // TODO: Add more
+    Ok(())
+}
 
-    for (zkvm_name, path_to_guest) in hosts {
-        // Compile the guest program using zkevm interface
-        // let program = ere_sp1::
+fn benchmark<C, V>(host_name: &str, guest_dir: &str) -> Result<(), Box<dyn std::error::Error>>
+where
+    C: Compiler,
+    C::Error: std::error::Error + Send + Sync + 'static,
+    V: zkVM<C>,
+    V::Error: std::error::Error + Send + Sync + 'static,
+{
+    println!("Benchmarking `{}`…", host_name);
 
-        generated_corpuses.into_par_iter().for_each(|bw| {
-            println!("{} (num_blocks={})", bw.name, bw.blocks_and_witnesses.len());
+    let path = PathBuf::from(guest_dir);
 
-            // Add input using zkVM input struct
+    let program = C::compile(&path)?;
+    let zkvm = V::new(program);
 
-            // Execute the guest program using zkvm interface
-            // TODO: Add an enum for whether we should execute or prove
+    let corpuses = generate_stateless_witness::generate();
+    for bw in &corpuses {
+        println!("  • {} ({} blocks)", bw.name, bw.blocks_and_witnesses.len());
 
-            WorkloadMetrics::to_path(
-                format!(
-                    "{}/{}/{}/{}.json",
-                    env!("CARGO_WORKSPACE_DIR"),
-                    "zkevm-metrics",
-                    zkvm_name,
-                    bw.name
-                ),
-                &reports,
-            )
-            .unwrap();
+        let mut reports = Vec::new();
+        for ci in &bw.blocks_and_witnesses {
+            let mut stdin = Input::new();
+            stdin.write(ci)?;
+            stdin.write(&bw.network)?;
 
-            println!(
-                "Finished processing and saved metrics for corpus: {}. Number of reports: {}",
-                bw.name,
-                reports.len()
-            );
-        });
+            let report = zkvm.execute(&stdin)?;
+            let region_cycles: HashMap<_, _> = report.region_cycles.into_iter().collect();
+
+            reports.push(WorkloadMetrics {
+                name: format!("{}-{}", bw.name, ci.block.number),
+                total_num_cycles: report.total_num_cycles,
+                region_cycles,
+            });
+        }
+
+        let out_path = format!(
+            "{}/zkevm-metrics/{}/{}.json",
+            env!("CARGO_WORKSPACE_DIR"),
+            host_name,
+            bw.name
+        );
+        WorkloadMetrics::to_path(out_path, &reports)?;
+        println!("wrote {} reports", reports.len());
     }
+
+    Ok(())
 }

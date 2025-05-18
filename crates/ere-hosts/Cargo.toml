@@ -11,6 +11,7 @@ witness-generator.workspace = true
 zkevm-metrics.workspace = true
 benchmark-runner.workspace = true
 dotenv = "0.15.0"
+anyhow = "*"
 
 ere-sp1.workspace = true
 zkvm-interface.workspace = true
