@@ -3036,8 +3036,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
-name = "ere-guests"
+name = "ere-hosts"
 version = "0.1.0"
+dependencies = [
+ "benchmark-runner",
+ "dotenv",
+ "ere-sp1",
+ "sp1-sdk",
+ "witness-generator",
+ "zkevm-metrics",
+ "zkvm-interface",
+]
+
+[[package]]
+name = "ere-sp1"
+version = "0.1.0"
+source = "git+https://github.com/eth-applied-research-group/ere#491ac024310f6c79c194ca90174cbbf047f58646"
+dependencies = [
+ "bincode",
+ "indexmap 2.9.0",
+ "sp1-sdk",
+ "tempfile",
+ "thiserror 2.0.12",
+ "toml",
+ "tracing",
+ "zkvm-interface",
+]
 
 [[package]]
 name = "errno"
@@ -14089,6 +14113,18 @@ dependencies = [
  "sha2 0.10.8",
  "zkm-lib 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
  "zkm-primitives 1.0.0 (git+https://github.com/zkMIPS/zkMIPS.git)",
+]
+
+[[package]]
+name = "zkvm-interface"
+version = "0.1.0"
+source = "git+https://github.com/eth-applied-research-group/ere#491ac024310f6c79c194ca90174cbbf047f58646"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "indexmap 2.9.0",
+ "serde",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
