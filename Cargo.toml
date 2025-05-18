@@ -5,23 +5,18 @@ members = [
     "xtask",
     # succinct
     "crates/zkevm-succinct/host",
-    "crates/zkevm-succinct/program",
     # zkm
     "crates/zkevm-zkm/host",
-    "crates/zkevm-zkm/program",
     # risc0
     "crates/zkevm-risc0/host",
-    "crates/zkevm-risc0/methods",
-    "crates/zkevm-risc0/methods/guest",
     # openvm
-    "crates/zkevm-openvm/program",
     "crates/zkevm-openvm/host",
     # Guest programs
     "ere-guests/sp1",
     "ere-guests/risc0",
     "ere-guests/risc0/guest", #TODO: fix so we have one crate
     "ere-guests/openvm",
-    "ere-guests/zkm", "crates/ere-hosts",
+    "ere-guests/zkm",
 ]
 resolver = "2"
 
