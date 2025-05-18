@@ -16,6 +16,12 @@ members = [
     # openvm
     "crates/zkevm-openvm/program",
     "crates/zkevm-openvm/host",
+    # Guest programs
+    "ere-guests/sp1",
+    "ere-guests/risc0",
+    "ere-guests/risc0/guest", #TODO: fix so we have one crate
+    "ere-guests/openvm",
+    "ere-guests/zkm", "crates/ere-hosts",
 ]
 resolver = "2"
 
@@ -114,6 +120,8 @@ witness-generator = { path = "crates/witness-generator" }
 zkevm-metrics = { path = "crates/metrics" }
 benchmark-runner = { path = "crates/benchmark-runner" }
 
+zkvm-interface = { git = "https://github.com/eth-applied-research-group/ere", package = "zkvm-interface" }
+ere-sp1 = { git = "https://github.com/eth-applied-research-group/ere", package = "ere-sp1" }
 
 # branch is kw/zkevm-benchmark-workload-repo
 # NOTE: We are using a branch of a branch that has not yet been merged into master.
