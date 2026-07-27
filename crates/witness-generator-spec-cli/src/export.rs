@@ -3,18 +3,22 @@ use std::{
     fs,
     io::{BufRead, BufReader, Write},
     path::{Component, Path, PathBuf},
+    time::UNIX_EPOCH,
 };
 
+use alloy_primitives::hex;
 use anyhow::{Context, ensure};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use tar::{Builder, Header};
 use tracing::{info, warn};
 
 use crate::{
     artifact::{
         self, ARTIFACT_SCHEMA_VERSION, ArtifactIndexEntry, BATCH_MANIFEST_PATH,
-        StatelessInputArtifact, fixture_archive_path, path_to_slash_string,
-        read_artifact_with_json, relative_artifact_path_from_parts, sha256_hex,
+        BATCH_MANIFEST_SCHEMA_VERSION, StatelessInputArtifact, fixture_archive_path,
+        path_to_slash_string, read_artifact_with_json, relative_artifact_path_from_parts,
+        sha256_hex,
     },
     config::CollectorConfig,
 };
@@ -49,6 +53,88 @@ struct IndexCache {
     conflicts: usize,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ExportedBatchMetadata {
+    pub(crate) path: PathBuf,
+    pub(crate) manifest_schema_version: u64,
+    pub(crate) network: String,
+    pub(crate) batch_start_block: u64,
+    pub(crate) batch_end_block: u64,
+    pub(crate) batch_size: u64,
+    pub(crate) artifact_count: usize,
+    pub(crate) created_at: String,
+    pub(crate) byte_length: u64,
+    pub(crate) sha256: String,
+    pub(crate) modified_at_unix_nanos: u64,
+}
+
+impl AsRef<Path> for ExportedBatchMetadata {
+    fn as_ref(&self) -> &Path {
+        &self.path
+    }
+}
+
+impl std::ops::Deref for ExportedBatchMetadata {
+    type Target = Path;
+
+    fn deref(&self) -> &Self::Target {
+        &self.path
+    }
+}
+
+#[derive(Debug)]
+struct WrittenBatchMetadata {
+    manifest_schema_version: u64,
+    network: String,
+    batch_start_block: u64,
+    batch_end_block: u64,
+    batch_size: u64,
+    artifact_count: usize,
+    created_at: String,
+    byte_length: u64,
+    sha256: String,
+}
+
+struct ChecksumWriter<W> {
+    inner: W,
+    hasher: Sha256,
+    byte_length: u64,
+}
+
+impl<W> ChecksumWriter<W> {
+    fn new(inner: W) -> Self {
+        Self {
+            inner,
+            hasher: Sha256::new(),
+            byte_length: 0,
+        }
+    }
+
+    fn finish(self) -> (W, u64, String) {
+        (
+            self.inner,
+            self.byte_length,
+            format!("0x{}", hex::encode(self.hasher.finalize())),
+        )
+    }
+}
+
+impl<W> Write for ChecksumWriter<W>
+where
+    W: Write,
+{
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        let written = self.inner.write(bytes)?;
+        self.hasher.update(&bytes[..written]);
+        self.byte_length += written as u64;
+        Ok(written)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BatchManifest {
@@ -79,7 +165,7 @@ struct BatchManifestArtifact {
 pub(crate) fn export_batches(
     config: &CollectorConfig,
     force: bool,
-) -> anyhow::Result<Vec<PathBuf>> {
+) -> anyhow::Result<Vec<ExportedBatchMetadata>> {
     let (by_block, discovery) = artifacts_by_block(config)?;
     let complete_batches = complete_batch_starts(&by_block, config.batch_size);
     let mut exported = Vec::new();
@@ -113,8 +199,9 @@ pub(crate) fn export_batches(
         }
 
         let artifacts = batch_artifacts(&by_block, start, end);
-        write_batch_archive(config, start, end, &artifacts, &out_path, force)?;
-        exported.push(out_path);
+        exported.push(write_batch_archive(
+            config, start, end, &artifacts, &out_path, force,
+        )?);
     }
 
     info!(
@@ -340,25 +427,27 @@ fn write_batch_archive(
     artifacts: &[&ArtifactDescriptor],
     out_path: &Path,
     force: bool,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<ExportedBatchMetadata> {
     let part_path = archive_part_path(out_path);
     if let Some(parent) = part_path.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("failed to create directory {}", parent.display()))?;
     }
 
-    let write_result = write_batch_archive_part(config, start, end, artifacts, &part_path);
-    if let Err(error) = write_result {
-        if part_path.exists() {
-            fs::remove_file(&part_path).with_context(|| {
-                format!(
-                    "{error:#}; additionally failed to remove partial archive {}",
-                    part_path.display()
-                )
-            })?;
+    let written = match write_batch_archive_part(config, start, end, artifacts, &part_path) {
+        Ok(written) => written,
+        Err(error) => {
+            if part_path.exists() {
+                fs::remove_file(&part_path).with_context(|| {
+                    format!(
+                        "{error:#}; additionally failed to remove partial archive {}",
+                        part_path.display()
+                    )
+                })?;
+            }
+            return Err(error);
         }
-        return Err(error);
-    }
+    };
 
     if out_path.exists() && force {
         fs::remove_file(out_path)
@@ -372,7 +461,20 @@ fn write_batch_archive(
         )
     })?;
 
-    Ok(())
+    let modified_at_unix_nanos = modified_at_unix_nanos(out_path)?;
+    Ok(ExportedBatchMetadata {
+        path: out_path.to_path_buf(),
+        manifest_schema_version: written.manifest_schema_version,
+        network: written.network,
+        batch_start_block: written.batch_start_block,
+        batch_end_block: written.batch_end_block,
+        batch_size: written.batch_size,
+        artifact_count: written.artifact_count,
+        created_at: written.created_at,
+        byte_length: written.byte_length,
+        sha256: written.sha256,
+        modified_at_unix_nanos,
+    })
 }
 
 fn write_batch_archive_part(
@@ -381,10 +483,11 @@ fn write_batch_archive_part(
     end: u64,
     artifacts: &[&ArtifactDescriptor],
     part_path: &Path,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<WrittenBatchMetadata> {
     let file = fs::File::create(part_path)
         .with_context(|| format!("failed to create partial archive {}", part_path.display()))?;
-    let encoder = zstd::stream::write::Encoder::new(file, ZSTD_LEVEL)
+    let checksum_writer = ChecksumWriter::new(file);
+    let encoder = zstd::stream::write::Encoder::new(checksum_writer, ZSTD_LEVEL)
         .context("failed to create zstd encoder")?;
     let mut tar = Builder::new(encoder);
     let mut manifest_artifacts = Vec::with_capacity(artifacts.len());
@@ -414,7 +517,7 @@ fn write_batch_archive_part(
     }
 
     let manifest = BatchManifest {
-        schema_version: 2,
+        schema_version: BATCH_MANIFEST_SCHEMA_VERSION,
         network: config.network.clone(),
         batch_start_block: start,
         batch_end_block: end,
@@ -429,8 +532,46 @@ fn write_batch_archive_part(
         .context("failed to append batch manifest")?;
 
     let encoder = tar.into_inner().context("failed to finish tar archive")?;
-    encoder.finish().context("failed to finish zstd archive")?;
-    Ok(())
+    let checksum_writer = encoder.finish().context("failed to finish zstd archive")?;
+    let (_file, byte_length, sha256) = checksum_writer.finish();
+    Ok(WrittenBatchMetadata {
+        manifest_schema_version: manifest.schema_version,
+        network: manifest.network,
+        batch_start_block: manifest.batch_start_block,
+        batch_end_block: manifest.batch_end_block,
+        batch_size: manifest.batch_size,
+        artifact_count: manifest.artifact_count,
+        created_at: manifest.created_at,
+        byte_length,
+        sha256,
+    })
+}
+
+fn modified_at_unix_nanos(path: &Path) -> anyhow::Result<u64> {
+    let modified = fs::metadata(path)
+        .with_context(|| format!("failed to stat batch archive {}", path.display()))?
+        .modified()
+        .with_context(|| {
+            format!(
+                "failed to read modification time for batch archive {}",
+                path.display()
+            )
+        })?;
+    let nanos = modified
+        .duration_since(UNIX_EPOCH)
+        .with_context(|| {
+            format!(
+                "batch archive {} has a modification time before the Unix epoch",
+                path.display()
+            )
+        })?
+        .as_nanos();
+    u64::try_from(nanos).with_context(|| {
+        format!(
+            "batch archive {} has an out-of-range modification time",
+            path.display()
+        )
+    })
 }
 
 fn validate_artifact_identity(
