@@ -31,6 +31,13 @@ Running `witness-generator-spec-cli export` rebuilds these files at the network 
 
 The generated links are relative, so the same catalog works with an `r2.dev` development URL or a custom domain.
 
+The exporter keeps private derived metadata in `exports/catalog-cache.json`.
+Unchanged archives are reused when their path, byte length, and modification
+time match, so routine catalog rebuilds do not decompress or checksum every
+archive. The cache is not published to R2 and can be deleted safely; the next
+export seeds it from a valid `batches.jsonl` or inspects any unresolved
+archives.
+
 ## Operator Flow
 
 Schema v2 is a clean cut and does not read input-only v1 artifacts. Configure a

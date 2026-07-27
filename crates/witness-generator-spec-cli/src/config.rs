@@ -101,6 +101,10 @@ impl CollectorConfig {
         self.exports_root().join("batches")
     }
 
+    pub(crate) fn catalog_cache_path(&self) -> PathBuf {
+        self.exports_root().join("catalog-cache.json")
+    }
+
     pub(crate) fn index_path(&self) -> PathBuf {
         self.network_root().join("index.jsonl")
     }

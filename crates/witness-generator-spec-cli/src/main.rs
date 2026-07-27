@@ -127,11 +127,15 @@ async fn main() -> anyhow::Result<()> {
         Some(Command::Export(args)) => {
             let config = CollectorConfig::from_path(args.config)?;
             let exported = export::export_batches(&config, args.force)?;
-            let catalog = catalog::generate_catalog(&config)?;
+            let catalog = catalog::generate_catalog(&config, &exported)?;
             info!(count = exported.len(), "exported batch archives");
             info!(
                 artifacts = catalog.artifact_count,
                 batches = catalog.batch_count,
+                fresh = catalog.fresh_batch_count,
+                cached = catalog.cached_batch_count,
+                seeded = catalog.seeded_batch_count,
+                inspected = catalog.inspected_batch_count,
                 "generated public catalog"
             );
             Ok(())

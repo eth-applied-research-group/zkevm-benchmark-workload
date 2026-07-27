@@ -1,20 +1,29 @@
 use std::{
+    collections::{BTreeMap, BTreeSet},
     fs,
-    io::Read,
-    path::{Path, PathBuf},
+    io::{BufRead, BufReader, Read},
+    path::{Component, Path, PathBuf},
+    time::UNIX_EPOCH,
 };
 
 use anyhow::{Context, ensure};
 use serde::{Deserialize, Serialize};
 use tar::Archive;
+use tracing::{info, warn};
 
 use crate::{
-    artifact::{self, BATCH_MANIFEST_PATH, path_to_slash_string, write_bytes_atomic},
+    artifact::{
+        self, BATCH_MANIFEST_PATH, BATCH_MANIFEST_SCHEMA_VERSION, path_to_slash_string,
+        write_bytes_atomic,
+    },
     config::CollectorConfig,
+    export::ExportedBatchMetadata,
 };
 
 const CATALOG_SCHEMA_VERSION: u64 = 2;
 const CATALOG_KIND: &str = "stateless-inputs-public-catalog";
+const CATALOG_CACHE_SCHEMA_VERSION: u64 = 1;
+const CATALOG_CACHE_KIND: &str = "stateless-inputs-catalog-cache";
 const HTML_INDEX: &str = "index.html";
 const PUBLIC_MANIFEST: &str = "manifest.json";
 const PUBLIC_BATCHES_INDEX: &str = "batches.jsonl";
@@ -29,6 +38,10 @@ pub(crate) const REQUIRED_CATALOG_FILES: &[&str] =
 pub(crate) struct CatalogGeneration {
     pub(crate) artifact_count: usize,
     pub(crate) batch_count: usize,
+    pub(crate) fresh_batch_count: usize,
+    pub(crate) cached_batch_count: usize,
+    pub(crate) seeded_batch_count: usize,
+    pub(crate) inspected_batch_count: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -79,6 +92,44 @@ struct PublicBatchEntry {
     path: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CatalogCache {
+    schema_version: u64,
+    kind: String,
+    network: String,
+    batches: Vec<CachedBatchEntry>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CachedBatchEntry {
+    modified_at_unix_nanos: u64,
+    batch: PublicBatchEntry,
+}
+
+#[derive(Debug)]
+struct ArchiveFile {
+    path: PathBuf,
+    relative_path: String,
+    byte_length: u64,
+    modified_at_unix_nanos: u64,
+}
+
+#[derive(Debug, Default)]
+struct ResolutionStats {
+    fresh: usize,
+    cached: usize,
+    seeded: usize,
+    inspected: usize,
+}
+
+enum LoadedCache {
+    Missing,
+    Valid(BTreeMap<String, CachedBatchEntry>),
+    Invalid,
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BatchArchiveManifest {
@@ -98,11 +149,21 @@ pub(crate) fn required_catalog_files(config: &CollectorConfig) -> Vec<(&'static 
         .collect()
 }
 
-pub(crate) fn generate_catalog(config: &CollectorConfig) -> anyhow::Result<CatalogGeneration> {
-    let batches = read_batch_entries(config)?;
+pub(crate) fn generate_catalog(
+    config: &CollectorConfig,
+    exported: &[ExportedBatchMetadata],
+) -> anyhow::Result<CatalogGeneration> {
+    let (batches, cache_batches, stats) = read_batch_entries(config, exported)?;
     let artifact_count = batches.iter().map(|batch| batch.artifact_count).sum();
     let manifest = public_manifest(config, &batches)?;
+    let cache = CatalogCache {
+        schema_version: CATALOG_CACHE_SCHEMA_VERSION,
+        kind: CATALOG_CACHE_KIND.to_owned(),
+        network: config.network.clone(),
+        batches: cache_batches,
+    };
 
+    write_json(config.catalog_cache_path(), &cache)?;
     write_json(config.network_root().join(PUBLIC_MANIFEST), &manifest)?;
     write_jsonl(config.network_root().join(PUBLIC_BATCHES_INDEX), &batches)?;
     write_bytes_atomic(
@@ -115,18 +176,99 @@ pub(crate) fn generate_catalog(config: &CollectorConfig) -> anyhow::Result<Catal
     )?;
     remove_stale_public_file(config, STALE_PUBLIC_BLOCKS_INDEX)?;
 
+    info!(
+        fresh = stats.fresh,
+        cached = stats.cached,
+        seeded = stats.seeded,
+        inspected = stats.inspected,
+        "resolved batch catalog metadata"
+    );
+
     Ok(CatalogGeneration {
         artifact_count,
         batch_count: batches.len(),
+        fresh_batch_count: stats.fresh,
+        cached_batch_count: stats.cached,
+        seeded_batch_count: stats.seeded,
+        inspected_batch_count: stats.inspected,
     })
 }
 
-fn read_batch_entries(config: &CollectorConfig) -> anyhow::Result<Vec<PublicBatchEntry>> {
+fn read_batch_entries(
+    config: &CollectorConfig,
+    exported: &[ExportedBatchMetadata],
+) -> anyhow::Result<(
+    Vec<PublicBatchEntry>,
+    Vec<CachedBatchEntry>,
+    ResolutionStats,
+)> {
+    let archives = archive_files(config)?;
+    let mut fresh = fresh_batch_entries(config, exported)?;
+    let loaded_cache = load_catalog_cache(config)?;
+    let seeds = if matches!(loaded_cache, LoadedCache::Missing) {
+        read_public_seed(config)?
+    } else {
+        BTreeMap::new()
+    };
+    let cache = match loaded_cache {
+        LoadedCache::Valid(cache) => cache,
+        LoadedCache::Missing | LoadedCache::Invalid => BTreeMap::new(),
+    };
+
+    let mut batches = Vec::with_capacity(archives.len());
+    let mut cache_batches = Vec::with_capacity(archives.len());
+    let mut stats = ResolutionStats::default();
+    for archive in archives {
+        let batch = if let Some(batch) = fresh.remove(&archive.relative_path) {
+            ensure!(
+                batch.batch.byte_length == archive.byte_length
+                    && batch.modified_at_unix_nanos == archive.modified_at_unix_nanos,
+                "fresh metadata for {} does not match the completed archive",
+                archive.path.display()
+            );
+            stats.fresh += 1;
+            batch.batch
+        } else if let Some(cached) = cache.get(&archive.relative_path).filter(|cached| {
+            cached.batch.byte_length == archive.byte_length
+                && cached.modified_at_unix_nanos == archive.modified_at_unix_nanos
+        }) {
+            stats.cached += 1;
+            cached.batch.clone()
+        } else if let Some(seed) = seeds
+            .get(&archive.relative_path)
+            .filter(|seed| seed.byte_length == archive.byte_length)
+        {
+            stats.seeded += 1;
+            seed.clone()
+        } else {
+            stats.inspected += 1;
+            inspect_archive(config, &archive)?
+        };
+
+        cache_batches.push(CachedBatchEntry {
+            modified_at_unix_nanos: archive.modified_at_unix_nanos,
+            batch: batch.clone(),
+        });
+        batches.push(batch);
+    }
+    ensure!(
+        fresh.is_empty(),
+        "metadata was returned for exported archives that are not present in {}",
+        config.batches_root().display()
+    );
+
+    batches.sort_by_key(|batch| (batch.batch_start_block, batch.batch_end_block));
+    cache_batches
+        .sort_by_key(|cached| (cached.batch.batch_start_block, cached.batch.batch_end_block));
+    Ok((batches, cache_batches, stats))
+}
+
+fn archive_files(config: &CollectorConfig) -> anyhow::Result<Vec<ArchiveFile>> {
     if !config.batches_root().exists() {
         return Ok(Vec::new());
     }
 
-    let mut archive_paths = Vec::new();
+    let mut archives = Vec::new();
     for entry in fs::read_dir(config.batches_root()).with_context(|| {
         format!(
             "failed to read batch export directory {}",
@@ -146,56 +288,281 @@ fn read_batch_entries(config: &CollectorConfig) -> anyhow::Result<Vec<PublicBatc
             .is_file()
             && is_batch_archive(&path)
         {
-            archive_paths.push(path);
-        }
-    }
-    archive_paths.sort();
-
-    let mut batches = Vec::new();
-    for archive_path in archive_paths {
-        let manifest = read_batch_manifest(&archive_path)?;
-        ensure!(
-            manifest.schema_version == 2,
-            "batch archive {} uses unsupported manifest schema version {}; expected 2",
-            archive_path.display(),
-            manifest.schema_version
-        );
-        ensure!(
-            manifest.network == config.network,
-            "batch archive {} is for network {}, expected {}",
-            archive_path.display(),
-            manifest.network,
-            config.network
-        );
-        let byte_length = fs::metadata(&archive_path)
-            .with_context(|| format!("failed to stat batch archive {}", archive_path.display()))?
-            .len();
-        let sha256 = artifact::file_sha256_hex(&archive_path)?;
-        let relative_path = archive_path
-            .strip_prefix(config.network_root())
-            .with_context(|| {
+            let metadata = fs::metadata(&path)
+                .with_context(|| format!("failed to stat batch archive {}", path.display()))?;
+            let relative_path = path.strip_prefix(config.network_root()).with_context(|| {
                 format!(
                     "batch archive {} is not under {}",
-                    archive_path.display(),
+                    path.display(),
                     config.network_root().display()
                 )
             })?;
-        batches.push(PublicBatchEntry {
+            archives.push(ArchiveFile {
+                relative_path: path_to_slash_string(relative_path),
+                byte_length: metadata.len(),
+                modified_at_unix_nanos: modified_at_unix_nanos(&path, &metadata)?,
+                path,
+            });
+        }
+    }
+    archives.sort_by(|left, right| left.relative_path.cmp(&right.relative_path));
+    Ok(archives)
+}
+
+fn fresh_batch_entries(
+    config: &CollectorConfig,
+    exported: &[ExportedBatchMetadata],
+) -> anyhow::Result<BTreeMap<String, CachedBatchEntry>> {
+    let mut entries = BTreeMap::new();
+    for exported in exported {
+        let relative_path = exported
+            .path
+            .strip_prefix(config.network_root())
+            .with_context(|| {
+                format!(
+                    "exported batch archive {} is not under {}",
+                    exported.path.display(),
+                    config.network_root().display()
+                )
+            })?;
+        let batch = PublicBatchEntry {
             schema_version: CATALOG_SCHEMA_VERSION,
-            network: manifest.network,
-            batch_start_block: manifest.batch_start_block,
-            batch_end_block: manifest.batch_end_block,
-            batch_size: manifest.batch_size,
-            artifact_count: manifest.artifact_count,
-            created_at: manifest.created_at,
-            byte_length,
-            sha256,
+            network: exported.network.clone(),
+            batch_start_block: exported.batch_start_block,
+            batch_end_block: exported.batch_end_block,
+            batch_size: exported.batch_size,
+            artifact_count: exported.artifact_count,
+            created_at: exported.created_at.clone(),
+            byte_length: exported.byte_length,
+            sha256: exported.sha256.clone(),
             path: path_to_slash_string(relative_path),
-        });
+        };
+        ensure!(
+            exported.manifest_schema_version == BATCH_MANIFEST_SCHEMA_VERSION,
+            "exported batch archive {} uses unsupported manifest schema version {}; expected {}",
+            exported.path.display(),
+            exported.manifest_schema_version,
+            BATCH_MANIFEST_SCHEMA_VERSION
+        );
+        ensure!(
+            valid_public_batch_entry(config, &batch),
+            "exported metadata for {} is invalid",
+            exported.path.display()
+        );
+        let key = batch.path.clone();
+        ensure!(
+            entries
+                .insert(
+                    key.clone(),
+                    CachedBatchEntry {
+                        modified_at_unix_nanos: exported.modified_at_unix_nanos,
+                        batch,
+                    },
+                )
+                .is_none(),
+            "duplicate exported metadata for {key}"
+        );
+    }
+    Ok(entries)
+}
+
+fn load_catalog_cache(config: &CollectorConfig) -> anyhow::Result<LoadedCache> {
+    let path = config.catalog_cache_path();
+    if !path.exists() {
+        return Ok(LoadedCache::Missing);
+    }
+    let bytes = fs::read(&path)
+        .with_context(|| format!("failed to read catalog cache {}", path.display()))?;
+    let cache: CatalogCache = match serde_json::from_slice(&bytes) {
+        Ok(cache) => cache,
+        Err(error) => {
+            warn!(path = %path.display(), %error, "ignoring malformed catalog cache");
+            return Ok(LoadedCache::Invalid);
+        }
+    };
+    if cache.schema_version != CATALOG_CACHE_SCHEMA_VERSION
+        || cache.kind != CATALOG_CACHE_KIND
+        || cache.network != config.network
+    {
+        warn!(
+            path = %path.display(),
+            schema_version = cache.schema_version,
+            kind = %cache.kind,
+            network = %cache.network,
+            "ignoring incompatible catalog cache"
+        );
+        return Ok(LoadedCache::Invalid);
     }
 
-    batches.sort_by_key(|batch| (batch.batch_start_block, batch.batch_end_block));
-    Ok(batches)
+    let mut entries = BTreeMap::new();
+    for cached in cache.batches {
+        if !valid_public_batch_entry(config, &cached.batch)
+            || entries.insert(cached.batch.path.clone(), cached).is_some()
+        {
+            warn!(path = %path.display(), "ignoring invalid catalog cache");
+            return Ok(LoadedCache::Invalid);
+        }
+    }
+    Ok(LoadedCache::Valid(entries))
+}
+
+fn read_public_seed(
+    config: &CollectorConfig,
+) -> anyhow::Result<BTreeMap<String, PublicBatchEntry>> {
+    let path = config.network_root().join(PUBLIC_BATCHES_INDEX);
+    if !path.exists() {
+        return Ok(BTreeMap::new());
+    }
+    let file = fs::File::open(&path)
+        .with_context(|| format!("failed to open public batch index {}", path.display()))?;
+    let mut entries = BTreeMap::new();
+    let mut conflicted = BTreeSet::new();
+    for (line_index, line) in BufReader::new(file).lines().enumerate() {
+        let line_number = line_index + 1;
+        let line = line.with_context(|| {
+            format!(
+                "failed to read line {line_number} from public batch index {}",
+                path.display()
+            )
+        })?;
+        if line.trim().is_empty() {
+            continue;
+        }
+        let batch: PublicBatchEntry = match serde_json::from_str(&line) {
+            Ok(batch) if valid_public_batch_entry(config, &batch) => batch,
+            Ok(_) => {
+                warn!(
+                    path = %path.display(),
+                    line = line_number,
+                    "ignoring invalid public batch seed entry"
+                );
+                continue;
+            }
+            Err(error) => {
+                warn!(
+                    path = %path.display(),
+                    line = line_number,
+                    %error,
+                    "ignoring malformed public batch seed entry"
+                );
+                continue;
+            }
+        };
+        if conflicted.contains(&batch.path) {
+            continue;
+        }
+        match entries.entry(batch.path.clone()) {
+            std::collections::btree_map::Entry::Vacant(slot) => {
+                slot.insert(batch);
+            }
+            std::collections::btree_map::Entry::Occupied(slot) => {
+                let batch_path = batch.path.clone();
+                slot.remove();
+                conflicted.insert(batch_path.clone());
+                warn!(
+                    path = %path.display(),
+                    line = line_number,
+                    batch_path,
+                    "ignoring duplicate public batch seed entries"
+                );
+            }
+        }
+    }
+    Ok(entries)
+}
+
+fn inspect_archive(
+    config: &CollectorConfig,
+    archive: &ArchiveFile,
+) -> anyhow::Result<PublicBatchEntry> {
+    let manifest = read_batch_manifest(&archive.path)?;
+    ensure!(
+        manifest.schema_version == BATCH_MANIFEST_SCHEMA_VERSION,
+        "batch archive {} uses unsupported manifest schema version {}; expected {}",
+        archive.path.display(),
+        manifest.schema_version,
+        BATCH_MANIFEST_SCHEMA_VERSION
+    );
+    ensure!(
+        manifest.network == config.network,
+        "batch archive {} is for network {}, expected {}",
+        archive.path.display(),
+        manifest.network,
+        config.network
+    );
+    let batch = PublicBatchEntry {
+        schema_version: CATALOG_SCHEMA_VERSION,
+        network: manifest.network,
+        batch_start_block: manifest.batch_start_block,
+        batch_end_block: manifest.batch_end_block,
+        batch_size: manifest.batch_size,
+        artifact_count: manifest.artifact_count,
+        created_at: manifest.created_at,
+        byte_length: archive.byte_length,
+        sha256: artifact::file_sha256_hex(&archive.path)?,
+        path: archive.relative_path.clone(),
+    };
+    ensure!(
+        valid_public_batch_entry(config, &batch),
+        "batch archive {} has invalid catalog metadata",
+        archive.path.display()
+    );
+    Ok(batch)
+}
+
+fn valid_public_batch_entry(config: &CollectorConfig, batch: &PublicBatchEntry) -> bool {
+    let path = Path::new(&batch.path);
+    let expected_path = Path::new(BATCH_PREFIX).join(format!(
+        "{}-{}.tar.zst",
+        batch.batch_start_block, batch.batch_end_block
+    ));
+    let valid_path = !path.as_os_str().is_empty()
+        && !path.is_absolute()
+        && path
+            .components()
+            .all(|component| matches!(component, Component::Normal(_)))
+        && path == expected_path;
+    let valid_range = batch
+        .batch_end_block
+        .checked_sub(batch.batch_start_block)
+        .and_then(|span| span.checked_add(1))
+        == Some(batch.batch_size)
+        && batch.batch_size > 0;
+    batch.schema_version == CATALOG_SCHEMA_VERSION
+        && batch.network == config.network
+        && valid_path
+        && valid_range
+        && valid_sha256(&batch.sha256)
+}
+
+fn valid_sha256(sha256: &str) -> bool {
+    sha256.len() == 66
+        && sha256.starts_with("0x")
+        && sha256[2..].bytes().all(|byte| byte.is_ascii_hexdigit())
+}
+
+fn modified_at_unix_nanos(path: &Path, metadata: &fs::Metadata) -> anyhow::Result<u64> {
+    let modified = metadata.modified().with_context(|| {
+        format!(
+            "failed to read modification time for batch archive {}",
+            path.display()
+        )
+    })?;
+    let nanos = modified
+        .duration_since(UNIX_EPOCH)
+        .with_context(|| {
+            format!(
+                "batch archive {} has a modification time before the Unix epoch",
+                path.display()
+            )
+        })?
+        .as_nanos();
+    u64::try_from(nanos).with_context(|| {
+        format!(
+            "batch archive {} has an out-of-range modification time",
+            path.display()
+        )
+    })
 }
 
 fn public_manifest(
@@ -484,7 +851,10 @@ fn is_batch_archive(path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::{
+        fs::FileTimes,
+        time::{Duration, SystemTime},
+    };
 
     use alloy_primitives::B256;
     use serde_json::Value;
@@ -513,12 +883,23 @@ mod tests {
         write_generated_artifact(&config, 0, B256::repeat_byte(0xaa));
         write_generated_artifact(&config, 1, B256::repeat_byte(0xbb));
         write_generated_artifact(&config, 2, B256::repeat_byte(0xcc));
-        export::export_batches(&config, false).unwrap();
+        let exported = export::export_batches(&config, false).unwrap();
 
-        let generation = generate_catalog(&config).unwrap();
+        assert_eq!(
+            exported[0].byte_length,
+            fs::metadata(&exported[0].path).unwrap().len()
+        );
+        assert_eq!(
+            exported[0].sha256,
+            artifact::file_sha256_hex(&exported[0].path).unwrap()
+        );
+        let generation = generate_catalog(&config, &exported).unwrap();
 
         assert_eq!(generation.artifact_count, 2);
         assert_eq!(generation.batch_count, 1);
+        assert_eq!(generation.fresh_batch_count, 1);
+        assert_eq!(generation.inspected_batch_count, 0);
+        assert!(config.catalog_cache_path().is_file());
         assert!(config.network_root().join("index.html").is_file());
         assert!(config.network_root().join("manifest.json").is_file());
         assert!(config.network_root().join("batches.jsonl").is_file());
@@ -570,7 +951,7 @@ mod tests {
         fs::write(config.network_root().join("blocks.jsonl"), b"stale\n").unwrap();
         export::export_batches(&config, false).unwrap();
 
-        let generation = generate_catalog(&config).unwrap();
+        let generation = generate_catalog(&config, &[]).unwrap();
 
         assert_eq!(generation.artifact_count, 0);
         assert_eq!(generation.batch_count, 0);
@@ -584,12 +965,16 @@ mod tests {
         write_generated_artifact(&config, 0, B256::repeat_byte(0xaa));
         write_generated_artifact(&config, 1, B256::repeat_byte(0xbb));
 
-        assert_eq!(export::export_batches(&config, false).unwrap().len(), 1);
+        let exported = export::export_batches(&config, false).unwrap();
+        assert_eq!(exported.len(), 1);
+        generate_catalog(&config, &exported).unwrap();
         assert!(export::export_batches(&config, false).unwrap().is_empty());
-        let generation = generate_catalog(&config).unwrap();
+        let generation = generate_catalog(&config, &[]).unwrap();
 
         assert_eq!(generation.artifact_count, 2);
         assert_eq!(generation.batch_count, 1);
+        assert_eq!(generation.cached_batch_count, 1);
+        assert_eq!(generation.inspected_batch_count, 0);
         assert_eq!(
             read_jsonl_values(&config.network_root().join("batches.jsonl")).len(),
             1
@@ -605,7 +990,7 @@ mod tests {
         write_generated_artifact(&config, 3, B256::repeat_byte(0xdd));
         export::export_batches(&config, false).unwrap();
 
-        generate_catalog(&config).unwrap();
+        generate_catalog(&config, &[]).unwrap();
 
         let html = fs::read_to_string(config.network_root().join("index.html")).unwrap();
         let newest = html.find(">2-3</td>").unwrap();
@@ -615,6 +1000,168 @@ mod tests {
         let batches = read_jsonl_values(&config.network_root().join("batches.jsonl"));
         assert_eq!(batches[0]["batchStartBlock"], 0);
         assert_eq!(batches[1]["batchStartBlock"], 2);
+    }
+
+    #[test]
+    fn seeds_missing_cache_from_public_batch_index() {
+        let config = test_config("seed_cache", 2);
+        write_generated_artifact(&config, 0, B256::repeat_byte(0xaa));
+        write_generated_artifact(&config, 1, B256::repeat_byte(0xbb));
+        let exported = export::export_batches(&config, false).unwrap();
+        generate_catalog(&config, &exported).unwrap();
+        fs::remove_file(config.catalog_cache_path()).unwrap();
+
+        let seeded = generate_catalog(&config, &[]).unwrap();
+        assert_eq!(seeded.seeded_batch_count, 1);
+        assert_eq!(seeded.inspected_batch_count, 0);
+
+        let cached = generate_catalog(&config, &[]).unwrap();
+        assert_eq!(cached.cached_batch_count, 1);
+        assert_eq!(cached.inspected_batch_count, 0);
+    }
+
+    #[test]
+    fn modification_time_change_invalidates_cached_entry() {
+        let config = test_config("mtime_change", 2);
+        write_generated_artifact(&config, 0, B256::repeat_byte(0xaa));
+        write_generated_artifact(&config, 1, B256::repeat_byte(0xbb));
+        let exported = export::export_batches(&config, false).unwrap();
+        generate_catalog(&config, &exported).unwrap();
+        let archive_path = config.batches_root().join("0-1.tar.zst");
+        let original_sha256 = exported[0].sha256.clone();
+        let file = fs::OpenOptions::new()
+            .write(true)
+            .open(&archive_path)
+            .unwrap();
+        file.set_times(FileTimes::new().set_modified(SystemTime::now() + Duration::from_secs(2)))
+            .unwrap();
+
+        let generation = generate_catalog(&config, &[]).unwrap();
+
+        assert_eq!(generation.cached_batch_count, 0);
+        assert_eq!(generation.inspected_batch_count, 1);
+        let batches = read_jsonl_values(&config.network_root().join(PUBLIC_BATCHES_INDEX));
+        assert_eq!(batches[0]["sha256"], original_sha256);
+    }
+
+    #[test]
+    fn force_replacement_overrides_cached_metadata() {
+        let config = test_config("force_replacement", 2);
+        write_generated_artifact(&config, 0, B256::repeat_byte(0xaa));
+        write_generated_artifact(&config, 1, B256::repeat_byte(0xbb));
+        let initial = export::export_batches(&config, false).unwrap();
+        generate_catalog(&config, &initial).unwrap();
+        let initial_sha256 = initial[0].sha256.clone();
+
+        write_generated_artifact(&config, 0, B256::repeat_byte(0xcc));
+        let replaced = export::export_batches(&config, true).unwrap();
+        let generation = generate_catalog(&config, &replaced).unwrap();
+
+        assert_eq!(replaced.len(), 1);
+        assert_eq!(replaced[0].artifact_count, 3);
+        assert_ne!(replaced[0].sha256, initial_sha256);
+        assert_eq!(generation.fresh_batch_count, 1);
+        assert_eq!(generation.cached_batch_count, 0);
+        assert_eq!(generation.inspected_batch_count, 0);
+    }
+
+    #[test]
+    fn deleted_archive_is_removed_from_cache_and_public_catalog() {
+        let config = test_config("deleted_archive", 2);
+        for block_number in 0..4 {
+            write_generated_artifact(&config, block_number, B256::repeat_byte(block_number as u8));
+        }
+        let exported = export::export_batches(&config, false).unwrap();
+        generate_catalog(&config, &exported).unwrap();
+        fs::remove_file(config.batches_root().join("0-1.tar.zst")).unwrap();
+
+        let generation = generate_catalog(&config, &[]).unwrap();
+
+        assert_eq!(generation.batch_count, 1);
+        assert_eq!(generation.cached_batch_count, 1);
+        let batches = read_jsonl_values(&config.network_root().join(PUBLIC_BATCHES_INDEX));
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0]["path"], "exports/batches/2-3.tar.zst");
+        let cache: CatalogCache =
+            serde_json::from_slice(&fs::read(config.catalog_cache_path()).unwrap()).unwrap();
+        assert_eq!(cache.batches.len(), 1);
+        assert_eq!(cache.batches[0].batch.path, "exports/batches/2-3.tar.zst");
+    }
+
+    #[test]
+    fn invalid_caches_trigger_full_rebuild_without_using_public_seed() {
+        let config = test_config("invalid_cache", 2);
+        write_generated_artifact(&config, 0, B256::repeat_byte(0xaa));
+        write_generated_artifact(&config, 1, B256::repeat_byte(0xbb));
+        let exported = export::export_batches(&config, false).unwrap();
+        generate_catalog(&config, &exported).unwrap();
+        let valid_cache: Value =
+            serde_json::from_slice(&fs::read(config.catalog_cache_path()).unwrap()).unwrap();
+
+        fs::write(config.catalog_cache_path(), b"{malformed").unwrap();
+        assert_full_cache_rebuild(&config);
+
+        let mut wrong_network = valid_cache.clone();
+        wrong_network["network"] = Value::String("other-network".to_owned());
+        write_cache_value(&config, &wrong_network);
+        assert_full_cache_rebuild(&config);
+
+        let mut unsupported_version = valid_cache.clone();
+        unsupported_version["schemaVersion"] = Value::from(999);
+        write_cache_value(&config, &unsupported_version);
+        assert_full_cache_rebuild(&config);
+
+        let mut duplicate = valid_cache;
+        let duplicate_batch = duplicate["batches"][0].clone();
+        duplicate["batches"]
+            .as_array_mut()
+            .unwrap()
+            .push(duplicate_batch);
+        write_cache_value(&config, &duplicate);
+        assert_full_cache_rebuild(&config);
+    }
+
+    #[test]
+    fn invalid_changed_archive_preserves_public_catalog_files() {
+        let config = test_config("invalid_changed_archive", 2);
+        write_generated_artifact(&config, 0, B256::repeat_byte(0xaa));
+        write_generated_artifact(&config, 1, B256::repeat_byte(0xbb));
+        let exported = export::export_batches(&config, false).unwrap();
+        generate_catalog(&config, &exported).unwrap();
+        let public_files = required_catalog_files(&config)
+            .into_iter()
+            .map(|(name, path)| (name, path.clone(), fs::read(path).unwrap()))
+            .collect::<Vec<_>>();
+        fs::write(
+            config.batches_root().join("0-1.tar.zst"),
+            b"invalid archive",
+        )
+        .unwrap();
+
+        let error = generate_catalog(&config, &[]).unwrap_err();
+
+        assert!(
+            format!("{error:#}").contains("0-1.tar.zst"),
+            "unexpected error: {error:#}"
+        );
+        for (name, path, contents) in public_files {
+            assert_eq!(fs::read(path).unwrap(), contents, "{name} was replaced");
+        }
+    }
+
+    fn assert_full_cache_rebuild(config: &CollectorConfig) {
+        let generation = generate_catalog(config, &[]).unwrap();
+        assert_eq!(generation.cached_batch_count, 0);
+        assert_eq!(generation.seeded_batch_count, 0);
+        assert_eq!(generation.inspected_batch_count, 1);
+    }
+
+    fn write_cache_value(config: &CollectorConfig, value: &Value) {
+        fs::write(
+            config.catalog_cache_path(),
+            serde_json::to_vec_pretty(value).unwrap(),
+        )
+        .unwrap();
     }
 
     fn write_generated_artifact(config: &CollectorConfig, block_number: u64, block_hash: B256) {

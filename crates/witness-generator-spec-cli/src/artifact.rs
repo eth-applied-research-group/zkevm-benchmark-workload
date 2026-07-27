@@ -17,6 +17,7 @@ use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use witness_generator_spec_cli::GeneratedInput;
 
 pub(crate) const ARTIFACT_SCHEMA_VERSION: u64 = 2;
+pub(crate) const BATCH_MANIFEST_SCHEMA_VERSION: u64 = 2;
 pub(crate) const BATCH_MANIFEST_PATH: &str = ".meta/manifest.json";
 const EEST_NETWORK: &str = "Amsterdam";
 const ZSTD_LEVEL: i32 = 3;
