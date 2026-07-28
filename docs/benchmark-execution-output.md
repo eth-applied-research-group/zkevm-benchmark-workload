@@ -70,7 +70,8 @@ A successful execution metrics file has this shape:
     "opcode_count": {
       "PUSH1": 5,
       "SSTORE": 2
-    }
+    },
+    "target_opcode": "MCOPY"
   },
   "execution": {
     "success": {
@@ -170,11 +171,12 @@ Canonical EEST metadata has this shape:
   "opcode_count": {
     "PUSH1": 5,
     "SSTORE": 2
-  }
+  },
+  "target_opcode": "MCOPY"
 }
 ```
 
-`block_number` and `block_used_gas` are `null` when the source fixture does not provide those values. `opcode_count` is the per-block opcode tally taken from `_info.metadata.opcode_count_per_block`, and it is `{}` when the source fixture predates that field.
+`block_number` and `block_used_gas` are `null` when the source fixture does not provide those values. `opcode_count` is the opcode tally of the benchmarked block taken from `_info.metadata.opcode_count_per_block`, and `target_opcode` is the opcode the benchmark stresses taken from `_info.metadata.target_opcode`. Either key is omitted when the source fixture supplies no value.
 
 ## Proofs And Verification
 
