@@ -287,6 +287,7 @@ mod tests {
         assert_eq!(metadata["block_used_gas"].as_u64(), Some(16));
         assert_eq!(metadata["opcode_count"]["PUSH1"].as_u64(), Some(5));
         assert_eq!(metadata["opcode_count"]["SSTORE"].as_u64(), Some(2));
+        assert_eq!(metadata["target_opcode"], "MCOPY");
 
         Ok(())
     }
@@ -395,7 +396,8 @@ mod tests {
                 ],
                 "_info": {
                     "metadata": {
-                        "opcode_count_per_block": [{"PUSH1": 5, "SSTORE": 2}]
+                        "opcode_count_per_block": [{"PUSH1": 5, "SSTORE": 2}],
+                        "target_opcode": "MCOPY"
                     }
                 }
             },

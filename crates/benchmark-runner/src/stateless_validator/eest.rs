@@ -18,7 +18,8 @@ pub(crate) struct EestStatelessFixture {
     pub(crate) chain_id: u64,
     pub(crate) block_number: Option<u64>,
     pub(crate) block_used_gas: Option<u64>,
-    pub(crate) opcode_count: BTreeMap<String, u64>,
+    pub(crate) opcode_count: Option<BTreeMap<String, u64>>,
+    pub(crate) target_opcode: Option<String>,
     pub(crate) stateless_input_bytes: Vec<u8>,
     pub(crate) stateless_output_bytes: Vec<u8>,
 }
@@ -48,7 +49,9 @@ struct EestInfo {
 #[derive(Debug, Default, Deserialize)]
 struct EestMetadata {
     #[serde(default)]
-    opcode_count_per_block: Vec<BTreeMap<String, u64>>,
+    opcode_count_per_block: Option<Vec<BTreeMap<String, u64>>>,
+    #[serde(default)]
+    target_opcode: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -90,20 +93,25 @@ pub(crate) fn load_eest_benchmark_fixtures(
     let mut fixtures = Vec::new();
     let mut fixture_names = HashSet::new();
 
-    for (test_name, case) in cases {
+    for (test_name, mut case) in cases {
         let chain_id = parse_json_u64(&case.config.chainid)
             .with_context(|| format!("Failed to parse chainid for EEST test {test_name}"))?;
 
-        let opcode_count_per_block = case.info.metadata.opcode_count_per_block;
-        if !opcode_count_per_block.is_empty() && opcode_count_per_block.len() != case.blocks.len() {
+        let opcode_count_per_block = case.info.metadata.opcode_count_per_block.as_ref();
+        if opcode_count_per_block
+            .is_some_and(|opcode_count_per_block| opcode_count_per_block.len() != case.blocks.len())
+        {
             bail!(
                 "EEST test {test_name} has {} opcode_count_per_block entries but {} blocks",
-                opcode_count_per_block.len(),
+                opcode_count_per_block.unwrap().len(),
                 case.blocks.len()
             );
         }
 
-        for (block_index, block) in case.blocks.into_iter().enumerate() {
+        // For EEST benchmark fixtures, the worst case block is the last block and the others are setup blocks,
+        // so here we only load the last block as benchmark fixture.
+        let block_index = case.blocks.len().saturating_sub(1);
+        if let Some(block) = case.blocks.pop() {
             let Some(input_hex) = block.stateless_input_bytes else {
                 info!(
                     "Skipping EEST test {test_name} block {block_index} from {source_path}: missing statelessInputBytes"
@@ -166,9 +174,8 @@ pub(crate) fn load_eest_benchmark_fixtures(
                 block_number,
                 block_used_gas,
                 opcode_count: opcode_count_per_block
-                    .get(block_index)
-                    .cloned()
-                    .unwrap_or_default(),
+                    .map(|opcode_count_per_block| opcode_count_per_block[block_index].clone()),
+                target_opcode: case.info.metadata.target_opcode,
                 stateless_input_bytes,
                 stateless_output_bytes,
             });
@@ -324,8 +331,8 @@ mod tests {
         assert_eq!(
             names,
             vec![
-                "eest__tests_foo_py_test_same_name_a__block0".to_string(),
-                "eest__tests_foo_py_test_same_name_a__block0__2".to_string(),
+                "eest__tests_foo_py_test_same_name_a__block2".to_string(),
+                "eest__tests_foo_py_test_same_name_a__block2__2".to_string(),
             ]
         );
         assert!(names.iter().all(|name| name.starts_with("eest__")));
@@ -343,20 +350,28 @@ mod tests {
             fixture.source_path,
             "blockchain_tests/for_amsterdam/compute/mcopy.json"
         );
-        assert_eq!(fixture.block_index, 0);
+        assert_eq!(fixture.block_index, 2);
         assert_eq!(fixture.chain_id, 1);
         assert_eq!(fixture.block_number, Some(1));
         assert_eq!(fixture.block_used_gas, Some(16));
         assert_eq!(
             fixture.opcode_count,
-            BTreeMap::from([("PUSH1".to_string(), 5), ("SSTORE".to_string(), 2)])
+            Some(BTreeMap::from([
+                ("PUSH1".to_string(), 5),
+                ("SSTORE".to_string(), 2)
+            ]))
         );
+        assert_eq!(fixture.target_opcode, Some("MCOPY".to_string()));
 
         let info_without_per_block = fixtures
             .iter()
             .find(|fixture| fixture.original_test_name == "tests/foo.py::test_same[name?a]")
             .unwrap();
-        assert!(info_without_per_block.opcode_count.is_empty());
+        assert!(info_without_per_block.opcode_count.is_none());
+        assert_eq!(
+            info_without_per_block.target_opcode,
+            Some("ADD".to_string())
+        );
 
         Ok(())
     }
@@ -449,21 +464,31 @@ mod tests {
 
     pub(crate) fn sample_eest_fixture() -> &'static str {
         r#"{
+            "tests/foo.py::test_same[empty_input]": {
+                "network": "Amsterdam",
+                "config": {"chainid": "0x01"},
+                "blocks": [
+                    {
+                        "statelessInputBytes": "0x",
+                        "statelessOutputBytes": "0xcc"
+                    }
+                ]
+            },
             "tests/foo.py::test_same[name/a]": {
                 "network": "Amsterdam",
                 "config": {"chainid": "0x01"},
                 "blocks": [
                     {
                         "statelessInputBytes": "0x150102",
-                        "statelessOutputBytes": "0xaabb",
-                        "blockHeader": {"number": "0x01", "gasUsed": "0x10"}
+                        "statelessOutputBytes": "0xcc"
                     },
                     {
                         "blockHeader": {"number": "0x02", "gasUsed": "0x20"}
                     },
                     {
-                        "statelessInputBytes": "0x",
-                        "statelessOutputBytes": "0xcc"
+                        "statelessInputBytes": "0x150102",
+                        "statelessOutputBytes": "0xaabb",
+                        "blockHeader": {"number": "0x01", "gasUsed": "0x10"}
                     }
                 ],
                 "_info": {
@@ -471,9 +496,9 @@ mod tests {
                         "opcode_count": {"PUSH1": 8, "SSTORE": 2, "MCOPY": 7},
                         "target_opcode": "MCOPY",
                         "opcode_count_per_block": [
-                            {"PUSH1": 5, "SSTORE": 2},
+                            {"MCOPY": 7},
                             {"PUSH1": 3},
-                            {"MCOPY": 7}
+                            {"PUSH1": 5, "SSTORE": 2}
                         ]
                     }
                 }
@@ -482,6 +507,8 @@ mod tests {
                 "network": "Amsterdam",
                 "config": {"chainid": "0x01"},
                 "blocks": [
+                    {},
+                    {},
                     {
                         "statelessInputBytes": "0x0f",
                         "statelessOutputBytes": "0xdead",

@@ -18,7 +18,10 @@ struct EestBlockMetadata {
     chain_id: u64,
     block_number: Option<u64>,
     block_used_gas: Option<u64>,
-    opcode_count: BTreeMap<String, u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    opcode_count: Option<BTreeMap<String, u64>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    target_opcode: Option<String>,
 }
 
 pub(crate) fn stateless_validator_input_from_fixture(
@@ -67,6 +70,7 @@ fn raw_eest_input_from_fixture(fixture: EestStatelessFixture) -> Result<Box<dyn 
         block_number: fixture.block_number,
         block_used_gas: fixture.block_used_gas,
         opcode_count: fixture.opcode_count,
+        target_opcode: fixture.target_opcode,
     };
     let fixture = GenericGuestFixture::<EestBlockMetadata> {
         name: fixture.name,
