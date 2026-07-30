@@ -36,19 +36,13 @@ cargo run -p ere-hosts --release -- --zkvms openvm \
     --input-folder /path/to/eest-fixtures
 ```
 
-Zesu remains a valid `--execution-client` value, but every Zesu invocation is
-temporarily rejected before default, local, or URL artifact resolution. Its
-Amsterdam routing and ZisK compatibility logic remain in place for the
-forthcoming `tests-zkevm` v0.6.2-compatible artifact:
+Run it with Zesu, which supports ZisK and Glamsterdam inputs only:
 
 ```bash
 cargo run -p ere-hosts --release -- --zkvms zisk \
     stateless-validator --execution-client zesu \
     --input-folder /path/to/amsterdam-fixtures
 ```
-
-Until the artifact is published and the availability gate is enabled, this
-command returns a targeted `temporarily unavailable` error.
 
 Run directly from an EEST fixture checkout:
 
@@ -151,13 +145,13 @@ When `--proofs-url` is used, the archive is downloaded, extracted to a temporary
 
 ## Guest Artifact Resolution
 
-Default Reth and Ethrex guests use the `ere-guests` artifact resolver. Tagged dependencies use release assets for that tag; commit or branch dependencies use GitHub Actions artifacts for the resolved commit and require `GITHUB_TOKEN` or `GH_TOKEN`.
+Default guests use the `ere-guests` artifact resolver. Tagged dependencies use release assets for that tag; commit or branch dependencies use GitHub Actions artifacts for the resolved commit and require `GITHUB_TOKEN` or `GH_TOKEN`.
+
+Artifacts are named `stateless-validator-<execution-client>-<zkvm>-<zkvm-sdk-version>`, so a zkVM SDK bump changes the resolved file names.
 
 Use local artifacts with `--bin-path <DIRECTORY>`, or provide a compatible remote directory with `--guest-artifact-base-url <URL>`. Those options remain mutually exclusive.
 
-Zesu is gated before this resolver for every artifact source. Re-enabling it
-requires publishing the compatible guest, updating its version pin, enabling
-the availability gate, and confirming the supported zkVM matrix.
+The default Zesu artifact is published for ZisK only, so combining `--execution-client zesu` with any other zkVM is rejected before resolution.
 
 ## Operational Notes
 
