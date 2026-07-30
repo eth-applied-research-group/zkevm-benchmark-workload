@@ -25,8 +25,6 @@ pub mod cli;
 const DEFAULT_EXECUTE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 const DEFAULT_PROVE_TIMEOUT: Duration = Duration::from_secs(15 * 60);
 const DEFAULT_VERIFY_TIMEOUT: Duration = Duration::from_secs(2);
-/// Temporary gate until ere-guests publishes a tests-zkevm v0.6.2-compatible Zesu artifact.
-const ZESU_ARTIFACTS_AVAILABLE: bool = false;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -133,15 +131,10 @@ async fn main() -> Result<()> {
                 el.version().to_string()
             };
             let el_str = format!("{}-{}", el_name, el_version);
-            let zkvms = get_el_zkvm_instances(
-                &el_name,
-                &cli.zkvms,
-                resource,
-                zkvm_config.clone(),
-                &guest_source,
-            )
-            .await
-            .context("Failed to get EL zkvm instances")?;
+            let zkvms =
+                get_el_zkvm_instances(el, &cli.zkvms, resource, zkvm_config.clone(), &guest_source)
+                    .await
+                    .context("Failed to get EL zkvm instances")?;
 
             let config = RunConfig {
                 sub_folder: Some(el_str),
@@ -186,12 +179,6 @@ fn validate_guest_compatibility(
     zkvms: &[zkVMKind],
     guest_source: &GuestProgramSource,
 ) -> Result<()> {
-    if matches!(el, stateless_validator::ExecutionClient::Zesu) && !ZESU_ARTIFACTS_AVAILABLE {
-        bail!(
-            "Zesu is temporarily unavailable pending a tests-zkevm v0.6.2-compatible ere-guests artifact"
-        );
-    }
-
     if !matches!(el, stateless_validator::ExecutionClient::Zesu)
         || !matches!(guest_source, GuestProgramSource::Default)
     {

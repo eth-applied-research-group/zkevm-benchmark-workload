@@ -7,9 +7,10 @@ use ere_dockerized::{
     zkVMKind, zkVMVerifier, DockerizedzkVM, DockerizedzkVMConfig, Elf, EncodedProof, Input,
     ProgramExecutionReport, ProgramProvingReport, ProverResource, PublicValues,
 };
-use ere_guests_downloader::{CompiledGuest, Downloader};
 use ere_util_tokio::block_on;
 use rayon::iter::{ParallelBridge, ParallelIterator};
+use stateless_validator_catalog::StatelessValidatorKind;
+use stateless_validator_downloader::{CompiledGuest, Downloader};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -19,8 +20,8 @@ use tracing::{info, warn};
 
 use zkevm_metrics::{BenchmarkRun, CrashInfo, ExecutionMetrics, HardwareInfo, ProvingMetrics};
 
-use crate::guest_programs::GuestFixture;
 use crate::zisk_profiling::{run_profiling, ProfileOutcome};
+use crate::{guest_programs::GuestFixture, stateless_validator::ExecutionClient};
 
 pub use crate::zisk_profiling::ProfileConfig;
 
@@ -413,26 +414,18 @@ pub(crate) fn get_panic_msg(panic_info: Box<dyn Any + Send>) -> String {
 
 /// Creates the requested EL/zkVMs ere instances.
 pub async fn get_el_zkvm_instances(
-    el: &str,
+    el: ExecutionClient,
     zkvms: &[zkVMKind],
     resource: ProverResource,
     zkvm_config: DockerizedzkVMConfig,
     guest_source: &GuestProgramSource,
 ) -> Result<Vec<ZkVMInstance>> {
-    let guest_name_prefix = format!("stateless-validator-{el}");
-    get_guest_zkvm_instances(
-        &guest_name_prefix,
-        zkvms,
-        resource,
-        zkvm_config,
-        guest_source,
-    )
-    .await
+    get_guest_zkvm_instances(el, zkvms, resource, zkvm_config, guest_source).await
 }
 
 /// Creates the requested guest program zkVMs ere instances.
 pub async fn get_guest_zkvm_instances(
-    guest_name_prefix: &str,
+    el: ExecutionClient,
     zkvms: &[zkVMKind],
     resource: ProverResource,
     zkvm_config: DockerizedzkVMConfig,
@@ -440,8 +433,7 @@ pub async fn get_guest_zkvm_instances(
 ) -> Result<Vec<ZkVMInstance>> {
     let mut instances = Vec::new();
     for zkvm in zkvms {
-        let guest_name = format!("{}-{}", guest_name_prefix, zkvm.as_str());
-        let compiled = load_compiled(&guest_name, guest_source).await?;
+        let compiled = load_compiled(el, *zkvm, guest_source).await?;
         let instance = match &resource {
             ProverResource::Cpu | ProverResource::Gpu => {
                 let zkvm = DockerizedzkVM::new(
@@ -479,9 +471,11 @@ pub async fn get_guest_zkvm_instances(
 }
 
 async fn load_compiled(
-    guest_name: &str,
+    el: ExecutionClient,
+    zkvm: zkVMKind,
     guest_source: &GuestProgramSource,
 ) -> Result<CompiledGuest> {
+    let guest_name = guest_artifact_name(el.into(), zkvm);
     if let GuestProgramSource::LocalPath(path) = guest_source {
         let elf = fs::read(path.join(format!("{guest_name}.elf")))
             .with_context(|| format!("Failed to read ELF from path: {}", path.display()))?;
@@ -496,14 +490,22 @@ async fn load_compiled(
     }
 
     if let GuestProgramSource::ArtifactBaseUrl(base_url) = guest_source {
-        return load_compiled_from_artifact_base_url(guest_name, base_url).await;
+        return load_compiled_from_artifact_base_url(&guest_name, base_url).await;
     }
 
     let downloader = guest_downloader().await?;
     downloader
-        .download(guest_name)
+        .download(el.into(), zkvm)
         .await
         .with_context(|| format!("Failed to download guest program: {guest_name}"))
+}
+
+/// Returns the released artifact name of the `stateless_validator` guest compiled for `zkvm`.
+fn guest_artifact_name(stateless_validator: StatelessValidatorKind, zkvm: zkVMKind) -> String {
+    format!(
+        "stateless-validator-{stateless_validator}-{zkvm}-{}",
+        zkvm.sdk_version()
+    )
 }
 
 async fn guest_downloader() -> Result<Downloader> {
@@ -789,9 +791,9 @@ mod tests {
         assert_eq!(
             guest_artifact_url(
                 "https://github.com/Consensys/zesu-zkvm/releases/download/bal-devnet-7-2026-06-12/",
-                "stateless-validator-zesu-zisk.elf",
+                "stateless-validator-zesu-zisk-v1.0.0-alpha.elf",
             ),
-            "https://github.com/Consensys/zesu-zkvm/releases/download/bal-devnet-7-2026-06-12/stateless-validator-zesu-zisk.elf"
+            "https://github.com/Consensys/zesu-zkvm/releases/download/bal-devnet-7-2026-06-12/stateless-validator-zesu-zisk-v1.0.0-alpha.elf"
         );
     }
 
@@ -808,12 +810,16 @@ mod tests {
 
     #[test]
     fn url_artifact_loader_requires_elf_but_not_vk_or_profiling_elf() -> Result<()> {
-        let server = TestServer::spawn(|path| {
-            (path == "/stateless-validator-zesu-zisk.elf").then(|| Vec::from("elf-bytes"))
-        });
+        let elf_path = format!(
+            "/{}.elf",
+            guest_artifact_name(StatelessValidatorKind::Zesu, zkVMKind::Zisk)
+        );
+        let server =
+            TestServer::spawn(move |path| (path == elf_path).then(|| Vec::from("elf-bytes")));
 
         let compiled = block_on(load_compiled(
-            "stateless-validator-zesu-zisk",
+            ExecutionClient::Zesu,
+            zkVMKind::Zisk,
             &GuestProgramSource::ArtifactBaseUrl(server.base_url()),
         ))?;
 
@@ -829,14 +835,16 @@ mod tests {
         let server = TestServer::spawn(|_| None);
 
         let err = block_on(load_compiled(
-            "stateless-validator-zesu-zisk",
+            ExecutionClient::Zesu,
+            zkVMKind::Zisk,
             &GuestProgramSource::ArtifactBaseUrl(server.base_url()),
         ))
         .unwrap_err();
 
-        assert!(err
-            .to_string()
-            .contains("stateless-validator-zesu-zisk.elf"));
+        assert!(err.to_string().contains(&format!(
+            "{}.elf",
+            guest_artifact_name(StatelessValidatorKind::Zesu, zkVMKind::Zisk)
+        )));
     }
 
     struct TestServer {
