@@ -24,8 +24,15 @@ pub enum ExecutionClient {
     Zesu,
 }
 
-/// Last published Zesu version, retained while its v0.6.2 artifact is unavailable.
-const ZESU_EL_VERSION: &str = "bal-devnet-7-2026-06-24";
+impl From<ExecutionClient> for StatelessValidatorKind {
+    fn from(value: ExecutionClient) -> Self {
+        match value {
+            ExecutionClient::Reth => Self::Reth,
+            ExecutionClient::Ethrex => Self::Ethrex,
+            ExecutionClient::Zesu => Self::Zesu,
+        }
+    }
+}
 
 impl ExecutionClient {
     /// Returns the version string associated with the selected guest artifact.
@@ -33,7 +40,7 @@ impl ExecutionClient {
         match self {
             Self::Reth => StatelessValidatorKind::Reth.version(),
             Self::Ethrex => StatelessValidatorKind::Ethrex.version(),
-            Self::Zesu => ZESU_EL_VERSION,
+            Self::Zesu => StatelessValidatorKind::Zesu.version(),
         }
     }
 }

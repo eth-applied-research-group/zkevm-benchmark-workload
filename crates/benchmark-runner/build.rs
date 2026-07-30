@@ -9,7 +9,7 @@ use std::fs;
 /// Repository URL used by Cargo for ere-guests git dependencies.
 const ERE_GUESTS_REPO: &str = "https://github.com/eth-act/ere-guests";
 /// Package used to resolve the ere-guests source for guest artifact downloads.
-const ERE_GUESTS_DOWNLOAD_PACKAGE_NAME: &str = "downloader";
+const ERE_GUESTS_DOWNLOAD_PACKAGE_NAME: &str = "stateless-validator-downloader";
 
 enum GuestDownloadSource {
     Tag(String),
