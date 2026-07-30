@@ -631,7 +631,6 @@ dependencies = [
  "serde",
  "serde_json",
  "stateless-validator-catalog",
- "stateless-validator-common",
  "stateless-validator-downloader",
  "strum 0.26.3",
  "tar",
