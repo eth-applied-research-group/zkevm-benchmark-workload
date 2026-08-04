@@ -1,6 +1,7 @@
 //! Runner for benchmark tests
 
 use anyhow::{anyhow, bail, Context, Result};
+use ere_cluster_client_openvm::{extract_public_values, OpenVMClusterClient, OpenVMProof};
 use ere_cluster_client_zisk::{ZiskClusterClient, ZiskProof};
 use ere_dockerized::{
     codec::{Decode, Encode},
@@ -78,6 +79,16 @@ pub enum ZkVMInstance {
         /// `Some` only if the guest is a Zisk guest.
         profiling_elf: Option<Elf>,
     },
+    /// Remote `OpenVM` proving cluster client.
+    OpenVMClusterClient {
+        /// HTTP client connected to the remote Axiom Edge cluster. Boxed
+        /// because it embeds the verifying key, which alone is larger than
+        /// every other variant of this enum.
+        client: Box<OpenVMClusterClient>,
+        /// Per-request prove timeout, propagated from the `DockerizedzkVMConfig`
+        /// prove timeout. Defaults to 3 minutes.
+        prove_timeout: Duration,
+    },
 }
 
 impl ZkVMInstance {
@@ -86,6 +97,7 @@ impl ZkVMInstance {
         match self {
             Self::Dockerized { zkvm, .. } => zkvm.zkvm_kind(),
             Self::ZiskClusterClient { .. } => zkVMKind::Zisk,
+            Self::OpenVMClusterClient { .. } => zkVMKind::OpenVM,
         }
     }
 
@@ -94,6 +106,7 @@ impl ZkVMInstance {
         match self {
             Self::Dockerized { zkvm, .. } => zkvm.name(),
             Self::ZiskClusterClient { client, .. } => client.verifier().name(),
+            Self::OpenVMClusterClient { client, .. } => client.verifier().name(),
         }
     }
 
@@ -102,6 +115,7 @@ impl ZkVMInstance {
         match self {
             Self::Dockerized { zkvm, .. } => zkvm.sdk_version(),
             Self::ZiskClusterClient { client, .. } => client.verifier().sdk_version(),
+            Self::OpenVMClusterClient { client, .. } => client.verifier().sdk_version(),
         }
     }
 
@@ -110,6 +124,7 @@ impl ZkVMInstance {
         match self {
             Self::Dockerized { profiling_elf, .. }
             | Self::ZiskClusterClient { profiling_elf, .. } => profiling_elf.as_ref(),
+            Self::OpenVMClusterClient { .. } => None,
         }
     }
 
@@ -119,6 +134,9 @@ impl ZkVMInstance {
             Self::Dockerized { zkvm, .. } => zkvm.execute(input),
             Self::ZiskClusterClient { .. } => {
                 bail!("ZiskClusterClient does not support Action::Execute")
+            }
+            Self::OpenVMClusterClient { .. } => {
+                bail!("OpenVMClusterClient does not support Action::Execute")
             }
         }
     }
@@ -145,6 +163,22 @@ impl ZkVMInstance {
                     ProgramProvingReport::new(proving_time),
                 ))
             }
+            Self::OpenVMClusterClient {
+                client,
+                prove_timeout,
+            } => {
+                let deadline = Instant::now() + *prove_timeout;
+                let (proof, proving_time) = block_on(client.prove(input, deadline))?;
+                // An OpenVM proof carries no program vk, so the public values
+                // are read directly rather than split off a vk-prefixed field.
+                let public_values = extract_public_values(&proof.0.user_pvs_proof.public_values)?;
+                let proof = proof.encode_to_vec()?;
+                Ok((
+                    public_values,
+                    EncodedProof(proof),
+                    ProgramProvingReport::new(proving_time),
+                ))
+            }
         }
     }
 
@@ -154,6 +188,10 @@ impl ZkVMInstance {
             Self::Dockerized { zkvm, .. } => zkvm.verify(proof),
             Self::ZiskClusterClient { client, .. } => {
                 let proof = ZiskProof::decode_from_slice(&proof.0)?;
+                Ok(client.verifier().verify(&proof)?)
+            }
+            Self::OpenVMClusterClient { client, .. } => {
+                let proof = OpenVMProof::decode_from_slice(&proof.0)?;
                 Ok(client.verifier().verify(&proof)?)
             }
         }
@@ -171,6 +209,15 @@ impl std::fmt::Debug for ZkVMInstance {
                 .finish(),
             Self::ZiskClusterClient { client, .. } => f
                 .debug_struct("ZiskClusterClient")
+                .field("zkvm", &client.verifier().name())
+                .field("sdk_version", &client.verifier().sdk_version())
+                .field(
+                    "program_vk",
+                    &hex::encode(client.program_vk().encode_to_vec().expect("infallible")),
+                )
+                .finish(),
+            Self::OpenVMClusterClient { client, .. } => f
+                .debug_struct("OpenVMClusterClient")
                 .field("zkvm", &client.verifier().name())
                 .field("sdk_version", &client.verifier().sdk_version())
                 .field(
@@ -212,6 +259,31 @@ pub enum Action {
     Verify,
 }
 
+/// Stateless input for mainnet block 25580000, proved once before the measured
+/// fixtures. The first proof of a run carries one-off costs the rest do not,
+/// such as a worker's ahead-of-time compile and its first GPU prover build, so
+/// absorbing them here keeps those out of the first fixture's timing.
+const WARM_UP_INPUT: &[u8] = include_bytes!("warm_up_input.bin");
+
+/// Proves [`WARM_UP_INPUT`] and discards the result.
+///
+/// A failure is logged rather than propagated, since a warm-up that does not
+/// land leaves the benchmark correct and only its first fixture slow.
+fn warm_up(zkvm: &ZkVMInstance) {
+    let input = Input {
+        stdin: WARM_UP_INPUT.to_vec(),
+        proofs: None,
+    };
+
+    info!("Warming up the prover before the measured fixtures");
+    let started = std::time::Instant::now();
+    match panic::catch_unwind(panic::AssertUnwindSafe(|| zkvm.prove(&input))) {
+        Ok(Ok(_)) => info!("Warm-up proof took {} ms", started.elapsed().as_millis()),
+        Ok(Err(e)) => warn!("Warm-up proof failed, continuing: {e}"),
+        Err(_) => warn!("Warm-up proof panicked, continuing"),
+    }
+}
+
 /// Executes benchmarks from a lazy iterator of fixtures.
 pub fn run_benchmark_iter<I>(instance: &ZkVMInstance, config: &RunConfig, inputs: I) -> Result<()>
 where
@@ -225,10 +297,13 @@ where
             process_input(instance, input, config)
         })?,
 
-        Action::Prove => inputs.into_iter().try_for_each(|input| {
-            let input = input?;
-            process_input(instance, input, config)
-        })?,
+        Action::Prove => {
+            warm_up(instance);
+            inputs.into_iter().try_for_each(|input| {
+                let input = input?;
+                process_input(instance, input, config)
+            })?
+        }
 
         Action::Verify => {
             return Err(anyhow!(
@@ -460,8 +535,23 @@ pub async fn get_guest_zkvm_instances(
                     profiling_elf: compiled.profiling_elf.map(Elf),
                 }
             }
+            ProverResource::Cluster(cfg) if *zkvm == zkVMKind::OpenVM => {
+                const DEFAULT_PROVE_TIMEOUT: Duration = Duration::from_mins(3);
+
+                // The cluster holds no program until this call registers one,
+                // which also compiles the guest ahead of time on every worker.
+                // Construction sits outside the per-fixture prove timeout, so
+                // that wait is not charged to the first fixture.
+                let client = OpenVMClusterClient::new(cfg, Elf(compiled.elf.clone()))
+                    .await
+                    .map_err(|e| anyhow!("Failed to connect to OpenVM cluster: {e}"))?;
+                ZkVMInstance::OpenVMClusterClient {
+                    client: Box::new(client),
+                    prove_timeout: zkvm_config.prove_timeout.unwrap_or(DEFAULT_PROVE_TIMEOUT),
+                }
+            }
             ProverResource::Cluster(_) => {
-                bail!("Cluster is only implemented for Zisk, got {zkvm}")
+                bail!("Cluster is only implemented for Zisk and OpenVM, got {zkvm}")
             }
             ProverResource::Network(_) => unreachable!(),
         };

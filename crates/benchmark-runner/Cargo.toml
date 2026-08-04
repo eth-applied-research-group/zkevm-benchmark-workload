@@ -7,6 +7,7 @@ rust-version.workspace = true
 [dependencies]
 zkevm-metrics.workspace = true
 ere-dockerized.workspace = true
+ere-cluster-client-openvm.workspace = true
 ere-cluster-client-zisk.workspace = true
 ere-util-tokio.workspace = true
 

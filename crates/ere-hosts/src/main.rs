@@ -78,10 +78,14 @@ async fn main() -> Result<()> {
         anyhow::bail!("--cluster-endpoint is only valid with --resource cluster");
     }
 
-    // Validate: --resource cluster currently only supports zisk zkVM and not support --action execute
+    // Validate: --resource cluster currently only supports zisk and openvm zkVMs and not support --action execute
     if matches!(cli.resource, cli::Resource::Cluster) {
-        if cli.zkvms.iter().any(|z| *z != zkVMKind::Zisk) {
-            anyhow::bail!("--resource cluster is only implemented for --zkvms zisk");
+        if cli
+            .zkvms
+            .iter()
+            .any(|z| !matches!(z, zkVMKind::Zisk | zkVMKind::OpenVM))
+        {
+            anyhow::bail!("--resource cluster is only implemented for --zkvms zisk and openvm");
         }
         if matches!(action, Action::Execute) {
             anyhow::bail!("--resource cluster is not implemented for --action execute");
@@ -201,14 +205,12 @@ fn validate_guest_compatibility(
     Ok(())
 }
 
-const fn build_zkvm_config(
-    action: Action,
-    timeout_override: Option<Duration>,
-) -> DockerizedzkVMConfig {
+fn build_zkvm_config(action: Action, timeout_override: Option<Duration>) -> DockerizedzkVMConfig {
     let mut config = DockerizedzkVMConfig {
         execute_timeout: Some(DEFAULT_EXECUTE_TIMEOUT),
         prove_timeout: Some(DEFAULT_PROVE_TIMEOUT),
         verify_timeout: Some(DEFAULT_VERIFY_TIMEOUT),
+        ..Default::default()
     };
 
     if let Some(timeout) = timeout_override {
