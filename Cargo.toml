@@ -106,10 +106,10 @@ benchmark-runner = { path = "crates/benchmark-runner" }
 # cluster client lives only on that branch, which is v0.14.0 plus that work.
 # See the [patch] block at the end, which brings ere-guests onto the same
 # revision so the graph keeps a single ere source.
-ere-dockerized = { git = "https://github.com/eth-act/ere", rev = "80f7a5db25d77f931f10206a40f3d9229765a670" }
-ere-cluster-client-openvm = { git = "https://github.com/eth-act/ere", rev = "80f7a5db25d77f931f10206a40f3d9229765a670" }
-ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", rev = "80f7a5db25d77f931f10206a40f3d9229765a670" }
-ere-util-tokio = { git = "https://github.com/eth-act/ere", rev = "80f7a5db25d77f931f10206a40f3d9229765a670" }
+ere-dockerized = { git = "https://github.com/eth-act/ere", rev = "0650b2752f97021573273706e7cefa590849e0e1" }
+ere-cluster-client-openvm = { git = "https://github.com/eth-act/ere", rev = "0650b2752f97021573273706e7cefa590849e0e1" }
+ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", rev = "0650b2752f97021573273706e7cefa590849e0e1" }
+ere-util-tokio = { git = "https://github.com/eth-act/ere", rev = "0650b2752f97021573273706e7cefa590849e0e1" }
 
 # ere-guests
 stateless-validator-catalog = { git = "https://github.com/eth-act/ere-guests", tag = "v0.15.0" }
@@ -151,5 +151,5 @@ hex = "0.4"
 zstd = "0.13"
 
 [patch."https://github.com/eth-act/ere"]
-ere-catalog = { git = "https://github.com/eth-act//ere", rev = "80f7a5db25d77f931f10206a40f3d9229765a670" }
-ere-util-build = { git = "https://github.com/eth-act//ere", rev = "80f7a5db25d77f931f10206a40f3d9229765a670" }
+ere-catalog = { git = "https://github.com/eth-act//ere", rev = "0650b2752f97021573273706e7cefa590849e0e1" }
+ere-util-build = { git = "https://github.com/eth-act//ere", rev = "0650b2752f97021573273706e7cefa590849e0e1" }
