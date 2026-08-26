@@ -8,7 +8,7 @@ Type=simple
 User=stateless-inputs
 Group=stateless-inputs
 Environment=RUST_LOG=info
-ExecStart=/usr/local/bin/witness-generator-spec-cli collect --config /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
+ExecStart=/usr/local/bin/witness-generator-spec-cli collect --config /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
 Restart=always
 RestartSec=10
 

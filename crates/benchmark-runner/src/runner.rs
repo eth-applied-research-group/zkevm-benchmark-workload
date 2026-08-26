@@ -475,7 +475,8 @@ async fn load_compiled(
     zkvm: zkVMKind,
     guest_source: &GuestProgramSource,
 ) -> Result<CompiledGuest> {
-    let guest_name = guest_artifact_name(el.into(), zkvm);
+    let stateless_validator_kind = el.registered_kind()?;
+    let guest_name = guest_artifact_name(stateless_validator_kind, zkvm);
     if let GuestProgramSource::LocalPath(path) = guest_source {
         let elf = fs::read(path.join(format!("{guest_name}.elf")))
             .with_context(|| format!("Failed to read ELF from path: {}", path.display()))?;
@@ -495,7 +496,7 @@ async fn load_compiled(
 
     let downloader = guest_downloader().await?;
     downloader
-        .download(el.into(), zkvm)
+        .download(stateless_validator_kind, zkvm)
         .await
         .with_context(|| format!("Failed to download guest program: {guest_name}"))
 }
@@ -790,10 +791,10 @@ mod tests {
     fn guest_artifact_url_joins_base_and_filename() {
         assert_eq!(
             guest_artifact_url(
-                "https://github.com/Consensys/zesu-zkvm/releases/download/bal-devnet-7-2026-06-12/",
-                "stateless-validator-zesu-zisk-v1.0.0-alpha.elf",
+                "https://github.com/paradigmxyz/stateless/releases/download/reth-guest-v0.1.0-rc.2/",
+                "stateless-validator-reth-zisk-v1.1.0-alpha.elf",
             ),
-            "https://github.com/Consensys/zesu-zkvm/releases/download/bal-devnet-7-2026-06-12/stateless-validator-zesu-zisk-v1.0.0-alpha.elf"
+            "https://github.com/paradigmxyz/stateless/releases/download/reth-guest-v0.1.0-rc.2/stateless-validator-reth-zisk-v1.1.0-alpha.elf"
         );
     }
 
@@ -801,10 +802,10 @@ mod tests {
     fn artifact_base_url_label_uses_last_path_segment() {
         assert_eq!(
             artifact_base_url_label(
-                "https://github.com/Consensys/zesu-zkvm/releases/download/bal-devnet-7-2026-06-12/"
+                "https://github.com/paradigmxyz/stateless/releases/download/reth-guest-v0.1.0-rc.2/"
             )
             .as_deref(),
-            Some("bal-devnet-7-2026-06-12")
+            Some("reth-guest-v0.1.0-rc.2")
         );
     }
 
@@ -812,13 +813,13 @@ mod tests {
     fn url_artifact_loader_requires_elf_but_not_vk_or_profiling_elf() -> Result<()> {
         let elf_path = format!(
             "/{}.elf",
-            guest_artifact_name(StatelessValidatorKind::Zesu, zkVMKind::Zisk)
+            guest_artifact_name(StatelessValidatorKind::Reth, zkVMKind::Zisk)
         );
         let server =
             TestServer::spawn(move |path| (path == elf_path).then(|| Vec::from("elf-bytes")));
 
         let compiled = block_on(load_compiled(
-            ExecutionClient::Zesu,
+            ExecutionClient::Reth,
             zkVMKind::Zisk,
             &GuestProgramSource::ArtifactBaseUrl(server.base_url()),
         ))?;
@@ -835,7 +836,7 @@ mod tests {
         let server = TestServer::spawn(|_| None);
 
         let err = block_on(load_compiled(
-            ExecutionClient::Zesu,
+            ExecutionClient::Reth,
             zkVMKind::Zisk,
             &GuestProgramSource::ArtifactBaseUrl(server.base_url()),
         ))
@@ -843,7 +844,7 @@ mod tests {
 
         assert!(err.to_string().contains(&format!(
             "{}.elf",
-            guest_artifact_name(StatelessValidatorKind::Zesu, zkVMKind::Zisk)
+            guest_artifact_name(StatelessValidatorKind::Reth, zkVMKind::Zisk)
         )));
     }
 

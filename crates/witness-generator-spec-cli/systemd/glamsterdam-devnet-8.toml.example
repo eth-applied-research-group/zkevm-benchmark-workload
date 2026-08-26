@@ -1,4 +1,4 @@
-network = "glamsterdam-devnet-5"
+network = "glamsterdam-devnet-8"
 
 # Local Beacon API and execution JSON-RPC endpoints.
 cl_url = "http://127.0.0.1:3500"

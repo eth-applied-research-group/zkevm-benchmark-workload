@@ -168,7 +168,7 @@ mod tests {
     fn parses_defaults_and_r2_config() {
         let config = CollectorConfig::from_toml_str(
             r#"
-network = "glamsterdam-devnet-5"
+network = "glamsterdam-devnet-8"
 cl_url = "http://cl"
 el_url = "http://el"
 
@@ -180,7 +180,7 @@ account_id = "abc123"
         )
         .unwrap();
 
-        assert_eq!(config.network, "glamsterdam-devnet-5");
+        assert_eq!(config.network, "glamsterdam-devnet-8");
         assert_eq!(config.out_root, PathBuf::from(DEFAULT_OUT_ROOT));
         assert_eq!(config.poll_interval, DEFAULT_POLL_INTERVAL);
         assert_eq!(config.batch_size, DEFAULT_BATCH_SIZE);
@@ -195,7 +195,7 @@ account_id = "abc123"
     fn parses_custom_duration_values() {
         let config = CollectorConfig::from_toml_str(
             r#"
-network = "glamsterdam-devnet-5"
+network = "glamsterdam-devnet-8"
 cl_url = "http://cl"
 el_url = "http://el"
 out_root = "/tmp/stateless"

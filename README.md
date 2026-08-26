@@ -16,7 +16,13 @@ This repository benchmarks Ethereum stateless-validator guests across multiple z
 - **`crates/metrics`**: serializable result types such as `BenchmarkRun`.
 - **`crates/witness-generator-spec-cli`**: separate CLI and library for producing and publishing benchmark-ready EEST stateless fixtures from CL/EL RPC endpoints.
 
-Reth and Ethrex are enabled across the supported zkVMs, while Zesu is enabled for ZisK only. Guest programs are maintained in [eth-act/ere-guests](https://github.com/eth-act/ere-guests) and are downloaded automatically from the resolved release or commit artifacts unless `--bin-path` or `--guest-artifact-base-url` is provided.
+Reth is currently enabled across OpenVM, SP1, and ZisK. The Ethrex and Zesu CLI
+variants remain available but fail early until `ere-guests` publishes compatible
+tests-zkevm v0.8.2 artifacts. Guest programs are maintained in
+[eth-act/ere-guests](https://github.com/eth-act/ere-guests). The current pinned
+commit resolves artifacts from GitHub Actions and requires `GITHUB_TOKEN` or
+`GH_TOKEN`; `--bin-path` and `--guest-artifact-base-url` remain available for
+Reth overrides.
 
 ## Prerequisites
 
@@ -38,7 +44,11 @@ networks. Use `generate` for one block or `collect` for continuous per-block
 collection. Exported live batches contain a `blockchain_tests/` tree and can be
 passed to `ere-hosts` immediately after extraction.
 
-Obtain an EEST fixture bundle from [ethereum/execution-specs](https://github.com/ethereum/execution-specs) whose `blockchain_tests` cases contain canonical stateless bytes. Then benchmark either the checkout's fixture root, a directory of EEST JSON files, or one EEST JSON file:
+Obtain the
+[`tests-zkevm-benchmark@v0.8.2`](https://github.com/ethereum/execution-specs/releases/tag/tests-zkevm-benchmark%40v0.8.2)
+fixture bundle, whose `blockchain_tests` cases contain canonical stateless
+bytes. Then benchmark either the extracted fixture root, a directory of EEST
+JSON files, or one EEST JSON file:
 
 ```bash
 cargo run -p ere-hosts --release -- --zkvms sp1 \

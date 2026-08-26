@@ -82,9 +82,15 @@ Each accepted block becomes one benchmark fixture. Its safe output name is deriv
 
 ## Execution-Client Routing
 
-All guests (Ethrex, Reth and Zesu) receives `statelessInputBytes` unchanged on stdin and uses `statelessOutputBytes` as the expected public values.
+Reth receives `statelessInputBytes` unchanged on stdin and uses
+`statelessOutputBytes` as the expected public values. Ethrex and Zesu remain
+valid CLI choices so their routing can be restored without reconstructing the
+interface, but they currently fail before artifact resolution because
+`ere-guests` has no compatible tests-zkevm v0.8.2 releases for them.
 
-Fixture deserialization is independent of the selected execution client. Client-specific routing occurs only after a canonical EEST case has loaded.
+Fixture deserialization remains independent of the selected execution client.
+Client-specific availability is checked before artifact resolution or guest
+execution.
 
 ## Fixture Selection
 

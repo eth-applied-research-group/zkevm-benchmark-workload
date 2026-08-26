@@ -6,13 +6,12 @@ use alloy_primitives::{B256, Bytes};
 use alloy_rlp::Decodable;
 use anyhow::{Context, ensure};
 use stateless_validator_common::{
-    HashTreeRoot as _, Sha2Hasher, SszEncode as _, SszList,
+    HashTreeRoot as _, ProgressiveList, Sha2Hasher, SszEncode as _, SszList,
     guest::{
         StatelessValidationResult,
         input::{
             ExecutionWitness, MAX_BYTES_PER_CODE, MAX_BYTES_PER_HEADER, MAX_BYTES_PER_WITNESS_NODE,
-            MAX_PUBLIC_KEYS, MAX_WITNESS_CODES, MAX_WITNESS_HEADERS, MAX_WITNESS_NODES,
-            PUBLIC_KEY_BYTES, ProtocolFork, StatelessInput,
+            MAX_WITNESS_HEADERS, ProtocolFork, PublicKeys, StatelessInput,
             new_payload_request::{
                 BlockAccessList, BuilderDepositRequest, BuilderDepositRequests, BuilderExitRequest,
                 BuilderExitRequests, ConsolidationRequest, ConsolidationRequests, DepositRequest,
@@ -25,13 +24,10 @@ use stateless_validator_common::{
     },
 };
 
-use crate::{
-    chain_config,
-    rpc::{
-        BeaconExecutionPayload, BuilderDepositRequestJson, BuilderExitRequestJson,
-        ConsolidationRequestJson, DepositRequestJson, ExecutionPayloadEnvelope,
-        ExecutionRequestsJson, RpcExecutionWitness, WithdrawalJson, WithdrawalRequestJson,
-    },
+use crate::rpc::{
+    BeaconExecutionPayload, BuilderDepositRequestJson, BuilderExitRequestJson,
+    ConsolidationRequestJson, DepositRequestJson, ExecutionPayloadEnvelope, ExecutionRequestsJson,
+    RpcExecutionWitness, WithdrawalJson, WithdrawalRequestJson,
 };
 
 /// Canonical stateless guest input generated from network RPC data.
@@ -69,28 +65,25 @@ pub(crate) fn build_generated_input(
         execution_payload: convert_execution_payload(payload)?,
         versioned_hashes: transaction_artifacts.versioned_hashes,
         parent_beacon_block_root: envelope.parent_beacon_block_root.0,
-        execution_requests: convert_execution_requests(&envelope.execution_requests)?,
+        execution_requests: convert_execution_requests(&envelope.execution_requests),
     });
 
     let witness = convert_witness(witness, block_number)?;
-    let chain_config = chain_config::amsterdam(chain_id);
-    let public_keys = SszList::<[u8; PUBLIC_KEY_BYTES], MAX_PUBLIC_KEYS>::try_from(
-        transaction_artifacts.public_keys,
-    )
-    .map_err(|err| anyhow::anyhow!("public_keys exceed SSZ bound: {err:?}"))?;
+    let public_keys = PublicKeys::from(transaction_artifacts.public_keys);
 
-    chain_config
-        .validate(&new_payload_request)
-        .context("generated chain configuration is not active for the payload")?;
     let new_payload_request_root = new_payload_request.hash_tree_root(&Sha2Hasher);
-    let stateless_output_bytes =
-        StatelessValidationResult::new(new_payload_request_root, true, chain_config.clone())
-            .to_ssz();
+    let stateless_output_bytes = StatelessValidationResult {
+        new_payload_request_root,
+        successful_validation: true,
+        chain_id,
+        schema_id: ProtocolFork::Amsterdam.schema_id(),
+    }
+    .to_ssz();
 
     let stateless_input = StatelessInput {
         new_payload_request,
         witness,
-        chain_config,
+        chain_id,
         public_keys,
     };
 
@@ -113,12 +106,8 @@ fn convert_execution_payload(
     let transactions = payload
         .transactions
         .iter()
-        .enumerate()
-        .map(|(i, tx)| {
-            PayloadTransaction::try_from(tx.to_vec())
-                .map_err(|err| anyhow::anyhow!("transaction #{i} exceeds SSZ bound: {err:?}"))
-        })
-        .collect::<anyhow::Result<Vec<_>>>()?;
+        .map(|tx| PayloadTransaction::from(tx.to_vec()))
+        .collect::<Vec<_>>();
     let withdrawals = payload
         .withdrawals
         .iter()
@@ -140,14 +129,11 @@ fn convert_execution_payload(
             .map_err(|err| anyhow::anyhow!("extra_data exceeds SSZ bound: {err:?}"))?,
         base_fee_per_gas: payload.base_fee_per_gas.to_le_bytes(),
         block_hash: payload.block_hash.0,
-        transactions: Transactions::try_from(transactions)
-            .map_err(|err| anyhow::anyhow!("transactions exceed SSZ bound: {err:?}"))?,
-        withdrawals: Withdrawals::try_from(withdrawals)
-            .map_err(|err| anyhow::anyhow!("withdrawals exceed SSZ bound: {err:?}"))?,
+        transactions: Transactions::from(transactions),
+        withdrawals: Withdrawals::from(withdrawals),
         blob_gas_used: payload.blob_gas_used,
         excess_blob_gas: payload.excess_blob_gas,
-        block_access_list: BlockAccessList::try_from(payload.block_access_list.to_vec())
-            .map_err(|err| anyhow::anyhow!("block_access_list exceeds SSZ bound: {err:?}"))?,
+        block_access_list: BlockAccessList::from(payload.block_access_list.to_vec()),
         slot_number: payload.slot_number,
     })
 }
@@ -161,9 +147,7 @@ const fn convert_withdrawal(withdrawal: &WithdrawalJson) -> Withdrawal {
     }
 }
 
-fn convert_execution_requests(
-    requests: &ExecutionRequestsJson,
-) -> anyhow::Result<ExecutionRequestsGloas> {
+fn convert_execution_requests(requests: &ExecutionRequestsJson) -> ExecutionRequestsGloas {
     let deposits = requests
         .deposits
         .iter()
@@ -190,18 +174,13 @@ fn convert_execution_requests(
         .map(convert_builder_exit_request)
         .collect::<Vec<_>>();
 
-    Ok(ExecutionRequestsGloas {
-        deposits: DepositRequests::try_from(deposits)
-            .map_err(|err| anyhow::anyhow!("deposit requests exceed SSZ bound: {err:?}"))?,
-        withdrawals: WithdrawalRequests::try_from(withdrawals)
-            .map_err(|err| anyhow::anyhow!("withdrawal requests exceed SSZ bound: {err:?}"))?,
-        consolidations: ConsolidationRequests::try_from(consolidations)
-            .map_err(|err| anyhow::anyhow!("consolidation requests exceed SSZ bound: {err:?}"))?,
-        builder_deposits: BuilderDepositRequests::try_from(builder_deposits)
-            .map_err(|err| anyhow::anyhow!("builder deposit requests exceed SSZ bound: {err:?}"))?,
-        builder_exits: BuilderExitRequests::try_from(builder_exits)
-            .map_err(|err| anyhow::anyhow!("builder exit requests exceed SSZ bound: {err:?}"))?,
-    })
+    ExecutionRequestsGloas {
+        deposits: DepositRequests::from(deposits),
+        withdrawals: WithdrawalRequests::from(withdrawals),
+        consolidations: ConsolidationRequests::from(consolidations),
+        builder_deposits: BuilderDepositRequests::from(builder_deposits),
+        builder_exits: BuilderExitRequests::from(builder_exits),
+    }
 }
 
 const fn convert_deposit_request(request: &DepositRequestJson) -> DepositRequest {
@@ -254,25 +233,38 @@ fn convert_witness(
 ) -> anyhow::Result<ExecutionWitness> {
     let headers = normalize_headers(witness.headers, block_number)?;
     Ok(ExecutionWitness {
-        state: bytes_to_nested_ssz_list::<MAX_BYTES_PER_WITNESS_NODE, MAX_WITNESS_NODES>(
+        state: bytes_to_progressive_list::<MAX_BYTES_PER_WITNESS_NODE>(
             witness.state,
             "witness.state",
         )?,
-        codes: bytes_to_nested_ssz_list::<MAX_BYTES_PER_CODE, MAX_WITNESS_CODES>(
-            witness.codes,
-            "witness.codes",
-        )?,
-        headers: bytes_to_nested_ssz_list::<MAX_BYTES_PER_HEADER, MAX_WITNESS_HEADERS>(
+        codes: bytes_to_progressive_list::<MAX_BYTES_PER_CODE>(witness.codes, "witness.codes")?,
+        headers: bytes_to_bounded_list::<MAX_BYTES_PER_HEADER, MAX_WITNESS_HEADERS>(
             headers,
             "witness.headers",
         )?,
     })
 }
 
-fn bytes_to_nested_ssz_list<const MAX_BYTES: usize, const MAX_ITEMS: usize>(
+fn bytes_to_progressive_list<const MAX_BYTES: usize>(
+    values: Vec<Bytes>,
+    label: &str,
+) -> anyhow::Result<ProgressiveList<SszList<u8, MAX_BYTES>>> {
+    Ok(ProgressiveList::from(bytes_to_byte_lists(values, label)?))
+}
+
+fn bytes_to_bounded_list<const MAX_BYTES: usize, const MAX_ITEMS: usize>(
     values: Vec<Bytes>,
     label: &str,
 ) -> anyhow::Result<SszList<SszList<u8, MAX_BYTES>, MAX_ITEMS>> {
+    let values = bytes_to_byte_lists(values, label)?;
+    SszList::<SszList<u8, MAX_BYTES>, MAX_ITEMS>::try_from(values)
+        .map_err(|err| anyhow::anyhow!("{label} exceeds SSZ item bound: {err:?}"))
+}
+
+fn bytes_to_byte_lists<const MAX_BYTES: usize>(
+    values: Vec<Bytes>,
+    label: &str,
+) -> anyhow::Result<Vec<SszList<u8, MAX_BYTES>>> {
     let values = values
         .into_iter()
         .enumerate()
@@ -281,8 +273,7 @@ fn bytes_to_nested_ssz_list<const MAX_BYTES: usize, const MAX_ITEMS: usize>(
                 .map_err(|err| anyhow::anyhow!("{label}[{i}] exceeds SSZ byte bound: {err:?}"))
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
-    SszList::<SszList<u8, MAX_BYTES>, MAX_ITEMS>::try_from(values)
-        .map_err(|err| anyhow::anyhow!("{label} exceeds SSZ item bound: {err:?}"))
+    Ok(values)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -310,8 +301,7 @@ fn decode_transaction_artifacts(transactions: &[Bytes]) -> anyhow::Result<Transa
         }
     }
 
-    let versioned_hashes = VersionedHashes::try_from(versioned_hashes)
-        .map_err(|err| anyhow::anyhow!("versioned_hashes exceed SSZ bound: {err:?}"))?;
+    let versioned_hashes = VersionedHashes::from(versioned_hashes);
 
     Ok(TransactionArtifacts {
         public_keys,
@@ -444,15 +434,38 @@ mod tests {
     }
 
     #[test]
-    fn witness_lists_enforce_bounds() {
+    fn witness_byte_lists_enforce_byte_bounds() {
         let oversized = Bytes::from(vec![0_u8; MAX_BYTES_PER_HEADER + 1]);
-        let err = bytes_to_nested_ssz_list::<MAX_BYTES_PER_HEADER, MAX_WITNESS_HEADERS>(
+        let err = bytes_to_bounded_list::<MAX_BYTES_PER_HEADER, MAX_WITNESS_HEADERS>(
             vec![oversized],
             "headers",
         )
         .unwrap_err();
 
         assert!(err.to_string().contains("exceeds SSZ byte bound"));
+    }
+
+    #[test]
+    fn witness_headers_retain_the_outer_list_bound() {
+        let headers = vec![Bytes::new(); MAX_WITNESS_HEADERS + 1];
+        let err =
+            bytes_to_bounded_list::<MAX_BYTES_PER_HEADER, MAX_WITNESS_HEADERS>(headers, "headers")
+                .unwrap_err();
+
+        assert!(err.to_string().contains("exceeds SSZ item bound"));
+    }
+
+    #[test]
+    fn witness_state_uses_progressive_lists() {
+        let state = bytes_to_progressive_list::<MAX_BYTES_PER_WITNESS_NODE>(
+            vec![Bytes::from_static(&[0x80]), Bytes::from_static(&[0x81])],
+            "state",
+        )
+        .unwrap();
+
+        assert_eq!(state.len(), 2);
+        assert_eq!(&*state[0], &[0x80]);
+        assert_eq!(&*state[1], &[0x81]);
     }
 
     #[test]
@@ -531,9 +544,12 @@ mod tests {
         assert_eq!(decoded.public_keys.len(), 0);
         let output =
             StatelessValidationResult::from_ssz_bytes(&first.stateless_output_bytes).unwrap();
+        assert_eq!(first.stateless_output_bytes.len(), 43);
         assert!(!first.stateless_output_bytes.starts_with(&[0x15, 0x01]));
         assert!(output.successful_validation);
-        assert_eq!(output.chain_config, decoded.chain_config);
+        assert_eq!(decoded.chain_id, first.chain_id);
+        assert_eq!(output.chain_id, decoded.chain_id);
+        assert_eq!(output.schema_id, ProtocolFork::Amsterdam.schema_id());
         assert_eq!(
             output.new_payload_request_root,
             decoded.new_payload_request.hash_tree_root(&Sha2Hasher)

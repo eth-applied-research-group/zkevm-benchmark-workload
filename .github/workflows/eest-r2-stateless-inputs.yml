@@ -6,20 +6,21 @@ on:
       catalog_url:
         description: Public R2 catalog root, index.html URL, or manifest.json URL
         required: false
-        default: https://pub-df22334654034ebab51bc096137a59d8.r2.dev/devnets/glamsterdam-devnet-7
+        default: https://pub-df22334654034ebab51bc096137a59d8.r2.dev/devnets/glamsterdam-devnet-8
         type: string
       eest_ref:
         description: ethereum/execution-specs ref to validate with
         required: false
-        default: tests-zkevm@v0.6.2
+        default: tests-zkevm@v0.8.2
         type: string
       batch_count:
         description: Number of latest complete batches to validate
         required: false
         default: "10"
         type: string
-  schedule:
-    - cron: "23 */2 * * *"
+  # TODO(r2-devnet-8): Re-enable the schedule after the devnet-8 R2 catalog exists.
+  # schedule:
+  #   - cron: "23 */2 * * *"
 
 permissions:
   contents: read
@@ -33,8 +34,8 @@ jobs:
     name: Validate Latest R2 Batch
     runs-on: ubuntu-latest
     env:
-      CATALOG_URL: ${{ github.event.inputs.catalog_url || 'https://pub-df22334654034ebab51bc096137a59d8.r2.dev/devnets/glamsterdam-devnet-7' }}
-      EEST_REF: ${{ github.event.inputs.eest_ref || 'tests-zkevm@v0.6.2' }}
+      CATALOG_URL: ${{ github.event.inputs.catalog_url || 'https://pub-df22334654034ebab51bc096137a59d8.r2.dev/devnets/glamsterdam-devnet-8' }}
+      EEST_REF: ${{ github.event.inputs.eest_ref || 'tests-zkevm@v0.8.2' }}
       BATCH_COUNT: ${{ github.event.inputs.batch_count || '10' }}
       SUMMARY_DIR: workload/target/eest-r2-stateless-inputs
     steps:
