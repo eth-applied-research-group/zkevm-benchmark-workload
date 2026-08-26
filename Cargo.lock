@@ -1520,8 +1520,8 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "ere-catalog"
-version = "0.15.0"
-source = "git+https://github.com/eth-act//ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act//ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "ere-util-build",
  "serde",
@@ -1530,8 +1530,8 @@ dependencies = [
 
 [[package]]
 name = "ere-cluster-client-openvm"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "bincode",
  "ere-compiler-core",
@@ -1551,8 +1551,8 @@ dependencies = [
 
 [[package]]
 name = "ere-cluster-client-zisk"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "bincode",
  "ere-compiler-core",
@@ -1571,21 +1571,21 @@ dependencies = [
 
 [[package]]
 name = "ere-codec"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 
 [[package]]
 name = "ere-compiler-core"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "ere-dockerized"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "anyhow",
  "ere-catalog",
@@ -1615,8 +1615,8 @@ dependencies = [
 
 [[package]]
 name = "ere-prover-core"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "anyhow",
  "auto_impl",
@@ -1632,8 +1632,8 @@ dependencies = [
 
 [[package]]
 name = "ere-server-api"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "prost",
  "serde",
@@ -1642,8 +1642,8 @@ dependencies = [
 
 [[package]]
 name = "ere-server-client"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "bincode",
  "ere-prover-core",
@@ -1654,24 +1654,24 @@ dependencies = [
 
 [[package]]
 name = "ere-util-build"
-version = "0.15.0"
-source = "git+https://github.com/eth-act//ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act//ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "cargo_metadata",
 ]
 
 [[package]]
 name = "ere-util-tokio"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "tokio",
 ]
 
 [[package]]
 name = "ere-verifier-core"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "auto_impl",
  "ere-codec",
@@ -1680,8 +1680,8 @@ dependencies = [
 
 [[package]]
 name = "ere-verifier-openvm"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "bitcode",
  "ere-util-build",
@@ -1694,8 +1694,8 @@ dependencies = [
 
 [[package]]
 name = "ere-verifier-zisk"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere?rev=ef5ecc4811bd9d6853a1ffd7430cee745546606b#ef5ecc4811bd9d6853a1ffd7430cee745546606b"
+version = "0.16.3"
+source = "git+https://github.com/eth-act/ere?rev=135fe4b0839dcc85ca31e7c2ffd82329e0486a64#135fe4b0839dcc85ca31e7c2ffd82329e0486a64"
 dependencies = [
  "bincode",
  "bytemuck",
@@ -4789,8 +4789,8 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 
 [[package]]
 name = "stateless-validator-catalog"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere-guests?tag=v0.15.0#817fae8d693f72297c6785fff47acaca5855a6ef"
+version = "0.16.0"
+source = "git+https://github.com/eth-act/ere-guests?tag=v0.16.0#4826a7bf88c381709d23d612883d0c25eee8813b"
 dependencies = [
  "ere-util-build",
  "serde",
@@ -4800,8 +4800,8 @@ dependencies = [
 
 [[package]]
 name = "stateless-validator-common"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere-guests?tag=v0.15.0#817fae8d693f72297c6785fff47acaca5855a6ef"
+version = "0.16.0"
+source = "git+https://github.com/eth-act/ere-guests?tag=v0.16.0#4826a7bf88c381709d23d612883d0c25eee8813b"
 dependencies = [
  "const-hex",
  "libssz",
@@ -4815,8 +4815,8 @@ dependencies = [
 
 [[package]]
 name = "stateless-validator-downloader"
-version = "0.15.0"
-source = "git+https://github.com/eth-act/ere-guests?tag=v0.15.0#817fae8d693f72297c6785fff47acaca5855a6ef"
+version = "0.16.0"
+source = "git+https://github.com/eth-act/ere-guests?tag=v0.16.0#4826a7bf88c381709d23d612883d0c25eee8813b"
 dependencies = [
  "anyhow",
  "ere-catalog",

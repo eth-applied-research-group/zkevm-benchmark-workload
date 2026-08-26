@@ -102,19 +102,16 @@ witness-generator-spec-cli = { path = "crates/witness-generator-spec-cli" }
 zkevm-metrics = { path = "crates/metrics" }
 benchmark-runner = { path = "crates/benchmark-runner" }
 
-# ere. Pinned to a revision rather than the v0.14.0 tag because the openvm
-# cluster client lives only on that branch, which is v0.14.0 plus that work.
-# See the [patch] block at the end, which brings ere-guests onto the same
-# revision so the graph keeps a single ere source.
-ere-dockerized = { git = "https://github.com/eth-act/ere", rev = "ef5ecc4811bd9d6853a1ffd7430cee745546606b" }
-ere-cluster-client-openvm = { git = "https://github.com/eth-act/ere", rev = "ef5ecc4811bd9d6853a1ffd7430cee745546606b" }
-ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", rev = "ef5ecc4811bd9d6853a1ffd7430cee745546606b" }
-ere-util-tokio = { git = "https://github.com/eth-act/ere", rev = "ef5ecc4811bd9d6853a1ffd7430cee745546606b" }
+# ere
+ere-dockerized = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
+ere-cluster-client-openvm = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
+ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
+ere-util-tokio = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
 
 # ere-guests
-stateless-validator-catalog = { git = "https://github.com/eth-act/ere-guests", tag = "v0.15.0" }
-stateless-validator-common = { git = "https://github.com/eth-act/ere-guests", tag = "v0.15.0" }
-stateless-validator-downloader = { git = "https://github.com/eth-act/ere-guests", tag = "v0.15.0" }
+stateless-validator-catalog = { git = "https://github.com/eth-act/ere-guests", tag = "v0.16.0" }
+stateless-validator-common = { git = "https://github.com/eth-act/ere-guests", tag = "v0.16.0" }
+stateless-validator-downloader = { git = "https://github.com/eth-act/ere-guests", tag = "v0.16.0" }
 
 # alloy
 alloy-consensus = { version = "=2.1.1", default-features = false }
@@ -151,5 +148,5 @@ hex = "0.4"
 zstd = "0.13"
 
 [patch."https://github.com/eth-act/ere"]
-ere-catalog = { git = "https://github.com/eth-act//ere", rev = "ef5ecc4811bd9d6853a1ffd7430cee745546606b" }
-ere-util-build = { git = "https://github.com/eth-act//ere", rev = "ef5ecc4811bd9d6853a1ffd7430cee745546606b" }
+ere-catalog = { git = "https://github.com/eth-act//ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
+ere-util-build = { git = "https://github.com/eth-act//ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
