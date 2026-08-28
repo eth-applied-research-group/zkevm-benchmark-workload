@@ -1,7 +1,6 @@
 //! Build canonical Amsterdam stateless guest input and expected output bytes from live RPC data.
 
 mod builder;
-mod chain_config;
 mod rpc;
 mod serde_helpers;
 

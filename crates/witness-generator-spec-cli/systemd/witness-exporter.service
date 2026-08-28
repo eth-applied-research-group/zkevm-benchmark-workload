@@ -6,7 +6,7 @@ Type=oneshot
 User=stateless-inputs
 Group=stateless-inputs
 Environment=RUST_LOG=info
-ExecStart=/usr/bin/flock /data/stateless-inputs/.export-publish.lock /usr/local/bin/witness-generator-spec-cli export --config /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
+ExecStart=/usr/bin/flock /data/stateless-inputs/.export-publish.lock /usr/local/bin/witness-generator-spec-cli export --config /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
 
 NoNewPrivileges=true
 PrivateTmp=true

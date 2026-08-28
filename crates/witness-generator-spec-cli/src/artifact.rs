@@ -11,7 +11,10 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use stateless_validator_common::{
     HashTreeRoot as _, Sha2Hasher, SszDecode as _,
-    guest::{StatelessInput, StatelessValidationResult, input::ProtocolFork},
+    guest::{
+        StatelessInput, StatelessValidationResult,
+        input::{ProtocolFork, new_payload_request::NewPayloadRequest},
+    },
 };
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};
 use witness_generator_spec_cli::GeneratedInput;
@@ -298,12 +301,16 @@ impl StatelessInputArtifact {
             "schema-v2 statelessOutputBytes must expect successful validation"
         );
         ensure!(
-            output.chain_config == input.chain_config,
-            "stateless output chain configuration does not match stateless input"
+            output.chain_id == input.chain_id,
+            "stateless output chain id does not match stateless input"
         );
         ensure!(
-            output.chain_config.chain_id == chain_id,
-            "config.chainid does not match the stateless input chain configuration"
+            input.chain_id == chain_id,
+            "config.chainid does not match the stateless input chain id"
+        );
+        ensure!(
+            output.schema_id == fork.schema_id(),
+            "stateless output schema id does not match stateless input"
         );
         ensure!(
             output.new_payload_request_root
@@ -314,12 +321,15 @@ impl StatelessInputArtifact {
             input.new_payload_request.block_number() == block_number,
             "blockHeader.number does not match the stateless input payload"
         );
+        let NewPayloadRequest::Gloas(request) = &input.new_payload_request else {
+            anyhow::bail!("Amsterdam stateless input did not decode as a Gloas payload request");
+        };
         ensure!(
-            input.new_payload_request.gas_used() == gas_used,
+            request.execution_payload.gas_used == gas_used,
             "blockHeader.gasUsed does not match the stateless input payload"
         );
         ensure!(
-            input.new_payload_request.block_hash() == block_hash.0,
+            request.execution_payload.block_hash == block_hash.0,
             "witness_generator.blockHash does not match the stateless input payload"
         );
 
@@ -598,7 +608,7 @@ pub(crate) fn test_generated_input(block_number: u64, block_hash: B256) -> Gener
     use stateless_validator_common::{
         SszEncode as _,
         guest::input::{
-            ChainConfig, ExecutionWitness, ForkActivation, ForkConfig, StatelessInput,
+            ExecutionWitness, StatelessInput,
             new_payload_request::{
                 ExecutionPayloadV4, ExecutionRequestsGloas, NewPayloadRequest,
                 NewPayloadRequestGloas,
@@ -606,10 +616,6 @@ pub(crate) fn test_generated_input(block_number: u64, block_hash: B256) -> Gener
         },
     };
 
-    let chain_config = ChainConfig {
-        chain_id: 1,
-        active_fork: ForkConfig::new(ForkActivation::new(None, Some(0))),
-    };
     let new_payload_request = NewPayloadRequest::Gloas(NewPayloadRequestGloas {
         execution_payload: ExecutionPayloadV4 {
             parent_hash: [0; 32],
@@ -639,14 +645,15 @@ pub(crate) fn test_generated_input(block_number: u64, block_hash: B256) -> Gener
     let input = StatelessInput {
         new_payload_request: new_payload_request.clone(),
         witness: ExecutionWitness::default(),
-        chain_config: chain_config.clone(),
+        chain_id: 1,
         public_keys: Default::default(),
     };
-    let output = StatelessValidationResult::new(
-        new_payload_request.hash_tree_root(&Sha2Hasher),
-        true,
-        chain_config,
-    );
+    let output = StatelessValidationResult {
+        new_payload_request_root: new_payload_request.hash_tree_root(&Sha2Hasher),
+        successful_validation: true,
+        chain_id: 1,
+        schema_id: ProtocolFork::Amsterdam.schema_id(),
+    };
     GeneratedInput {
         stateless_input_bytes: input.to_schema_prefixed_ssz(ProtocolFork::Amsterdam),
         stateless_output_bytes: output.to_ssz(),
@@ -661,6 +668,7 @@ pub(crate) fn test_generated_input(block_number: u64, block_hash: B256) -> Gener
 #[cfg(test)]
 mod tests {
     use benchmark_runner::stateless_validator::{ExecutionClient, stateless_validator_input_iter};
+    use stateless_validator_common::SszEncode as _;
 
     use super::*;
 
@@ -669,7 +677,7 @@ mod tests {
         let dir = temp_dir("artifact_roundtrip");
         let generated = test_generated_input(42, B256::repeat_byte(0xaa));
         let artifact = StatelessInputArtifact::from_generated_at(
-            "glamsterdam-devnet-5",
+            "glamsterdam-devnet-8",
             "head",
             &generated,
             "2026-06-11T00:00:00Z",
@@ -837,15 +845,55 @@ mod tests {
         assert!(format!("{error:#}").contains("unsupported collected artifact"));
     }
 
+    #[test]
+    fn rejects_stateless_output_chain_id_mismatch() {
+        let mut fixture = artifact_for(42, B256::repeat_byte(0xaa)).fixture;
+        mutate_fixture_output(&mut fixture, |output| output.chain_id = 2);
+
+        let error = StatelessInputArtifact::from_fixture(fixture).unwrap_err();
+
+        assert!(
+            error
+                .to_string()
+                .contains("stateless output chain id does not match stateless input")
+        );
+    }
+
+    #[test]
+    fn rejects_stateless_output_schema_id_mismatch() {
+        let mut fixture = artifact_for(42, B256::repeat_byte(0xaa)).fixture;
+        mutate_fixture_output(&mut fixture, |output| output.schema_id = 0x1401);
+
+        let error = StatelessInputArtifact::from_fixture(fixture).unwrap_err();
+
+        assert!(
+            error
+                .to_string()
+                .contains("stateless output schema id does not match stateless input")
+        );
+    }
+
     fn artifact_for(block_number: u64, block_hash: B256) -> StatelessInputArtifact {
         StatelessInputArtifact::from_generated_at(
-            "glamsterdam-devnet-5",
+            "glamsterdam-devnet-8",
             "head",
             &test_generated_input(block_number, block_hash),
             "2026-06-11T00:00:00Z",
             "test-commit".to_owned(),
         )
         .unwrap()
+    }
+
+    fn mutate_fixture_output(
+        fixture: &mut EestFixture,
+        mutate: impl FnOnce(&mut StatelessValidationResult),
+    ) {
+        let block = &mut fixture.tests.values_mut().next().unwrap().blocks[0];
+        let bytes =
+            decode_hex_bytes("statelessOutputBytes", &block.stateless_output_bytes).unwrap();
+        let mut output = StatelessValidationResult::from_ssz_bytes(&bytes).unwrap();
+        mutate(&mut output);
+        block.stateless_output_bytes = hex_bytes(&output.to_ssz());
     }
 
     fn temp_dir(name: &str) -> PathBuf {

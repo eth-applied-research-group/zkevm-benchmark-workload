@@ -154,7 +154,7 @@ mod tests {
                 "s3",
                 "sync",
                 config.batches_root().to_str().unwrap(),
-                "s3://stateless-inputs/devnets/glamsterdam-devnet-5/exports/batches",
+                "s3://stateless-inputs/devnets/glamsterdam-devnet-8/exports/batches",
                 "--exclude",
                 "*.part",
                 "--endpoint-url",
@@ -167,7 +167,7 @@ mod tests {
                 "s3",
                 "cp",
                 config.network_root().join("index.html").to_str().unwrap(),
-                "s3://stateless-inputs/devnets/glamsterdam-devnet-5/index.html",
+                "s3://stateless-inputs/devnets/glamsterdam-devnet-8/index.html",
                 "--endpoint-url",
                 "https://abc123.r2.cloudflarestorage.com",
             ]
@@ -182,7 +182,7 @@ mod tests {
                     .join("manifest.json")
                     .to_str()
                     .unwrap(),
-                "s3://stateless-inputs/devnets/glamsterdam-devnet-5/manifest.json",
+                "s3://stateless-inputs/devnets/glamsterdam-devnet-8/manifest.json",
                 "--endpoint-url",
                 "https://abc123.r2.cloudflarestorage.com",
             ]
@@ -197,7 +197,7 @@ mod tests {
                     .join("batches.jsonl")
                     .to_str()
                     .unwrap(),
-                "s3://stateless-inputs/devnets/glamsterdam-devnet-5/batches.jsonl",
+                "s3://stateless-inputs/devnets/glamsterdam-devnet-8/batches.jsonl",
                 "--endpoint-url",
                 "https://abc123.r2.cloudflarestorage.com",
             ]
@@ -208,7 +208,7 @@ mod tests {
                 "s3",
                 "cp",
                 config.network_root().join("SHA256SUMS").to_str().unwrap(),
-                "s3://stateless-inputs/devnets/glamsterdam-devnet-5/SHA256SUMS",
+                "s3://stateless-inputs/devnets/glamsterdam-devnet-8/SHA256SUMS",
                 "--endpoint-url",
                 "https://abc123.r2.cloudflarestorage.com",
             ]
@@ -218,7 +218,7 @@ mod tests {
             vec![
                 "s3",
                 "rm",
-                "s3://stateless-inputs/devnets/glamsterdam-devnet-5/blocks.jsonl",
+                "s3://stateless-inputs/devnets/glamsterdam-devnet-8/blocks.jsonl",
                 "--endpoint-url",
                 "https://abc123.r2.cloudflarestorage.com",
             ]
@@ -228,7 +228,7 @@ mod tests {
             vec![
                 "s3",
                 "rm",
-                "s3://stateless-inputs/devnets/glamsterdam-devnet-5/index.jsonl",
+                "s3://stateless-inputs/devnets/glamsterdam-devnet-8/index.jsonl",
                 "--endpoint-url",
                 "https://abc123.r2.cloudflarestorage.com",
             ]
@@ -262,7 +262,7 @@ mod tests {
         ));
         let _ = fs::remove_dir_all(&out_root);
         CollectorConfig {
-            network: "glamsterdam-devnet-5".to_owned(),
+            network: "glamsterdam-devnet-8".to_owned(),
             cl_url: "http://cl".to_owned(),
             el_url: "http://el".to_owned(),
             out_root,

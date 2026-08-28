@@ -8,7 +8,7 @@ The units assume:
 
 - Binary path: `/usr/local/bin/witness-generator-spec-cli`
 - Runtime user and group: `stateless-inputs`
-- Config path: `/etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml`
+- Config path: `/etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml`
 - Data root in the CLI config: `/data/stateless-inputs`
 - Optional R2 credentials file: `/etc/witness-generator-spec-cli/r2.env`
 - `flock` available at `/usr/bin/flock` to serialize export and publish jobs
@@ -42,17 +42,17 @@ Cloudflare account ID for your deployment:
 
 ```bash
 sudo install -m 0640 -o root -g stateless-inputs \
-  crates/witness-generator-spec-cli/systemd/glamsterdam-devnet-5.toml.example \
-  /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
-sudoedit /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
+  crates/witness-generator-spec-cli/systemd/glamsterdam-devnet-8.toml.example \
+  /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
+sudoedit /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
 ```
 
 Restrict the config file because RPC URLs can be private:
 
 ```bash
 sudo chown root:stateless-inputs \
-  /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
-sudo chmod 0640 /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
+  /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
+sudo chmod 0640 /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
 ```
 
 Install the systemd units:

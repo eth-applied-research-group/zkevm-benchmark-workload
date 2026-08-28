@@ -166,7 +166,7 @@ mod tests {
         ));
         let _ = fs::remove_dir_all(&out_root);
         CollectorConfig {
-            network: "glamsterdam-devnet-5".to_owned(),
+            network: "glamsterdam-devnet-8".to_owned(),
             cl_url: "http://cl".to_owned(),
             el_url: "http://el".to_owned(),
             out_root,

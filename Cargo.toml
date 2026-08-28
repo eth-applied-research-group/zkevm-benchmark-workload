@@ -103,14 +103,14 @@ zkevm-metrics = { path = "crates/metrics" }
 benchmark-runner = { path = "crates/benchmark-runner" }
 
 # ere
-ere-dockerized = { git = "https://github.com/eth-act/ere", tag = "v0.14.0" }
-ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", tag = "v0.14.0" }
-ere-util-tokio = { git = "https://github.com/eth-act/ere", tag = "v0.14.0" }
+ere-dockerized = { git = "https://github.com/eth-act/ere", tag = "v0.16.2" }
+ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", tag = "v0.16.2" }
+ere-util-tokio = { git = "https://github.com/eth-act/ere", tag = "v0.16.2" }
 
 # ere-guests
-stateless-validator-catalog = { git = "https://github.com/eth-act/ere-guests", tag = "v0.14.0" }
-stateless-validator-common = { git = "https://github.com/eth-act/ere-guests", tag = "v0.14.0" }
-stateless-validator-downloader = { git = "https://github.com/eth-act/ere-guests", tag = "v0.14.0" }
+stateless-validator-catalog = { git = "https://github.com/eth-act/ere-guests", rev = "d5a6451221acd42993f4a2c8c40b041e06571dd9" }
+stateless-validator-common = { git = "https://github.com/eth-act/ere-guests", rev = "d5a6451221acd42993f4a2c8c40b041e06571dd9" }
+stateless-validator-downloader = { git = "https://github.com/eth-act/ere-guests", rev = "d5a6451221acd42993f4a2c8c40b041e06571dd9" }
 
 # alloy
 alloy-consensus = { version = "=2.1.1", default-features = false }

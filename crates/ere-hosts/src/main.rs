@@ -120,16 +120,10 @@ async fn main() -> Result<()> {
             execution_client,
         } => {
             let el: stateless_validator::ExecutionClient = execution_client.into();
-            validate_guest_compatibility(el, &cli.zkvms, &guest_source)?;
+            validate_guest_compatibility(el)?;
 
             let el_name = el.as_ref().to_lowercase();
-            let el_version = if matches!(el, stateless_validator::ExecutionClient::Zesu) {
-                guest_source
-                    .version_label()
-                    .unwrap_or_else(|| el.version().to_string())
-            } else {
-                el.version().to_string()
-            };
+            let el_version = el.version()?;
             let el_str = format!("{}-{}", el_name, el_version);
             let zkvms =
                 get_el_zkvm_instances(el, &cli.zkvms, resource, zkvm_config.clone(), &guest_source)
@@ -174,31 +168,8 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn validate_guest_compatibility(
-    el: stateless_validator::ExecutionClient,
-    zkvms: &[zkVMKind],
-    guest_source: &GuestProgramSource,
-) -> Result<()> {
-    if !matches!(el, stateless_validator::ExecutionClient::Zesu)
-        || !matches!(guest_source, GuestProgramSource::Default)
-    {
-        return Ok(());
-    }
-
-    let unsupported = zkvms
-        .iter()
-        .filter(|zkvm| **zkvm != zkVMKind::Zisk)
-        .map(|zkvm| zkvm.as_str())
-        .collect::<Vec<_>>();
-    if !unsupported.is_empty() {
-        bail!(
-            "the default Zesu {} artifact is available only for ZisK; unsupported --zkvms: {}",
-            el.version(),
-            unsupported.join(", ")
-        );
-    }
-
-    Ok(())
+fn validate_guest_compatibility(el: stateless_validator::ExecutionClient) -> Result<()> {
+    el.registered_kind().map(|_| ())
 }
 
 const fn build_zkvm_config(
@@ -209,6 +180,7 @@ const fn build_zkvm_config(
         execute_timeout: Some(DEFAULT_EXECUTE_TIMEOUT),
         prove_timeout: Some(DEFAULT_PROVE_TIMEOUT),
         verify_timeout: Some(DEFAULT_VERIFY_TIMEOUT),
+        health_timeout: Duration::from_secs(5 * 60),
     };
 
     if let Some(timeout) = timeout_override {

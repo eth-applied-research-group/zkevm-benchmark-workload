@@ -40,8 +40,9 @@ archives.
 
 ## Operator Flow
 
-Schema v2 is a clean cut and does not read input-only v1 artifacts. Configure a
-fresh local output root and publish to a fresh R2 prefix when deploying it.
+Schema v2 is a clean cut and does not read input-only v1 artifacts. The
+tests-zkevm v0.8.2 wire model must use the fresh `glamsterdam-devnet-8`
+network namespace; do not mix devnet-5 or devnet-7 artifacts into it.
 
 Generate one benchmark-ready fixture without starting the collector:
 
@@ -56,21 +57,21 @@ Collect live stateless fixtures:
 
 ```bash
 cargo run -p witness-generator-spec-cli --release -- collect \
-    --config /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
+    --config /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
 ```
 
 Export complete local block ranges and rebuild the public catalog:
 
 ```bash
 cargo run -p witness-generator-spec-cli --release -- export \
-    --config /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
+    --config /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
 ```
 
 Publish batch archives and catalog files to R2:
 
 ```bash
 cargo run -p witness-generator-spec-cli --release -- publish-r2 \
-    --config /etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml
+    --config /etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml
 ```
 
 If `publish-r2` reports a missing public catalog file, run `export` first.
@@ -131,14 +132,14 @@ cd /path/to/parent
 git clone https://github.com/ethereum/execution-specs.git
 cd execution-specs
 git fetch --tags
-git checkout tests-zkevm@v0.6.2
+git checkout 'tests-zkevm@v0.8.2'
 ```
 
 From this repository root, run:
 
 ```bash
-CATALOG_URL="https://<public-host>/<new-v0.6.2-prefix>/<network>"
-EEST_REF="tests-zkevm@v0.6.2"
+CATALOG_URL="https://pub-df22334654034ebab51bc096137a59d8.r2.dev/devnets/glamsterdam-devnet-8"
+EEST_REF="tests-zkevm@v0.8.2"
 EEST_DIR="../execution-specs"
 SUMMARY_DIR="target/eest-r2-stateless-inputs"
 

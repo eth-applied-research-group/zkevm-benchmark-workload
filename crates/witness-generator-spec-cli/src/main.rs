@@ -238,7 +238,7 @@ mod tests {
                 "witness-generator-spec-cli",
                 command,
                 "--config",
-                "/etc/witness-generator-spec-cli/glamsterdam-devnet-5.toml",
+                "/etc/witness-generator-spec-cli/glamsterdam-devnet-8.toml",
             ])
             .unwrap();
         }

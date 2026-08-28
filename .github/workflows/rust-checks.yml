@@ -40,6 +40,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            libbenchmark-dev \
+            libgmp-dev \
+            libomp-dev \
+            libopenmpi-dev \
+            libsodium-dev \
+            nasm \
+            nlohmann-json3-dev \
+            openmpi-bin \
+            openmpi-common
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
         with:
@@ -61,6 +77,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            libbenchmark-dev \
+            libgmp-dev \
+            libomp-dev \
+            libopenmpi-dev \
+            libsodium-dev \
+            nasm \
+            nlohmann-json3-dev \
+            openmpi-bin \
+            openmpi-common
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly
 
@@ -81,6 +113,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            libbenchmark-dev \
+            libgmp-dev \
+            libomp-dev \
+            libopenmpi-dev \
+            libsodium-dev \
+            nasm \
+            nlohmann-json3-dev \
+            openmpi-bin \
+            openmpi-common
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@nightly

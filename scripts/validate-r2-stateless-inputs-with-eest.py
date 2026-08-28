@@ -22,8 +22,8 @@ except ImportError:
     zstandard = None
 
 DEFAULT_CATALOG_URL = (
-    "https://pub-5345007fbd06486bbb7cbbe9f3112c45.r2.dev/"
-    "devnets/glamsterdam-devnet-5"
+    "https://pub-df22334654034ebab51bc096137a59d8.r2.dev/"
+    "devnets/glamsterdam-devnet-8"
 )
 REQUEST_TIMEOUT_SECONDS = 60
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
@@ -613,6 +613,22 @@ def validate_artifact(
             "stored statelessOutputBytes does not expect successful validation "
             f"({stateless_output_diagnostics(expected_output)})"
         )
+    config = test.get("config")
+    if not isinstance(config, dict):
+        raise ValidationError("EEST fixture is missing config")
+    chain_id = parse_json_u64("config.chainid", config.get("chainid"))
+    input_schema_id = int.from_bytes(input_bytes[:2], "big")
+    if int(expected_output.chain_id) != chain_id:
+        raise ValidationError(
+            "statelessOutputBytes chain ID mismatch: "
+            f"expected {chain_id}, got {int(expected_output.chain_id)}"
+        )
+    if int(expected_output.schema_id) != input_schema_id:
+        raise ValidationError(
+            "statelessOutputBytes schema ID mismatch: "
+            f"expected 0x{input_schema_id:04x}, "
+            f"got 0x{int(expected_output.schema_id):04x}"
+        )
 
     actual_output_bytes = bytes(
         guest.run_stateless_guest(guest.bytes_type(input_bytes))
@@ -683,7 +699,8 @@ def stateless_output_diagnostics(output: Any) -> str:
     return (
         f"newPayloadRequestRoot=0x{output_root}, "
         f"successfulValidation={bool(output.successful_validation)}, "
-        f"chainId={int(output.chain_config.chain_id)}"
+        f"chainId={int(output.chain_id)}, "
+        f"schemaId=0x{int(output.schema_id):04x}"
     )
 
 
@@ -692,12 +709,11 @@ def stateless_input_diagnostics(input_bytes: bytes, guest: EestGuest) -> str:
         stateless_input = guest.deserialize_stateless_input(
             guest.bytes_type(input_bytes)
         )
-        chain_config = stateless_input.chain_config
-        active_fork = chain_config.active_fork
         payload = stateless_input.new_payload_request.execution_payload
+        schema_id = int.from_bytes(input_bytes[:2], "big")
         return (
-            f"chainId={int(chain_config.chain_id)}, "
-            f"activeFork={active_fork.fork}, "
+            f"chainId={int(stateless_input.chain_id)}, "
+            f"schemaId=0x{schema_id:04x}, "
             f"payloadBlockNumber={int(payload.block_number)}, "
             f"payloadBlockHash=0x{bytes(payload.block_hash).hex()}"
         )

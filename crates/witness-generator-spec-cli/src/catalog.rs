@@ -909,7 +909,7 @@ mod tests {
         let manifest: Value =
             serde_json::from_slice(&fs::read(config.network_root().join("manifest.json")).unwrap())
                 .unwrap();
-        assert_eq!(manifest["network"], "glamsterdam-devnet-5");
+        assert_eq!(manifest["network"], "glamsterdam-devnet-8");
         assert!(manifest.get("blocks").is_none());
         assert!(manifest["paths"].get("blocks").is_none());
         assert!(manifest["paths"].get("legacyBlockIndex").is_none());
@@ -934,7 +934,7 @@ mod tests {
         assert!(checksums.contains("  0-1.tar.zst\n"));
 
         let html = fs::read_to_string(config.network_root().join("index.html")).unwrap();
-        assert!(html.contains("glamsterdam-devnet-5 stateless inputs"));
+        assert!(html.contains("glamsterdam-devnet-8 stateless inputs"));
         assert!(html.contains("Total batch size"));
         assert!(!html.contains("Total batch bytes"));
         assert!(html.contains("exports/batches/0-1.tar.zst"));
@@ -1195,7 +1195,7 @@ mod tests {
         ));
         let _ = fs::remove_dir_all(&out_root);
         CollectorConfig {
-            network: "glamsterdam-devnet-5".to_owned(),
+            network: "glamsterdam-devnet-8".to_owned(),
             cl_url: "http://cl".to_owned(),
             el_url: "http://el".to_owned(),
             out_root,
