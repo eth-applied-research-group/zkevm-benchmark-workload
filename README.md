@@ -16,13 +16,13 @@ This repository benchmarks Ethereum stateless-validator guests across multiple z
 - **`crates/metrics`**: serializable result types such as `BenchmarkRun`.
 - **`crates/witness-generator-spec-cli`**: separate CLI and library for producing and publishing benchmark-ready EEST stateless fixtures from CL/EL RPC endpoints.
 
-Reth is currently enabled across OpenVM, SP1, and ZisK. The Ethrex and Zesu CLI
-variants remain available but fail early until `ere-guests` publishes compatible
-tests-zkevm v0.8.2 artifacts. Guest programs are maintained in
-[eth-act/ere-guests](https://github.com/eth-act/ere-guests). The current pinned
-commit resolves artifacts from GitHub Actions and requires `GITHUB_TOKEN` or
-`GH_TOKEN`; `--bin-path` and `--guest-artifact-base-url` remain available for
-Reth overrides.
+Reth `v0.1.0-rc.2` and Ethrex `v26.0.0-rc.2` are enabled across OpenVM, SP1,
+and ZisK. Zesu remains a valid CLI choice but fails early because `ere-guests`
+has no active tests-zkevm v0.8.2 artifacts for it. Guest programs are maintained
+in [eth-act/ere-guests](https://github.com/eth-act/ere-guests). The current
+pinned commit resolves artifacts from GitHub Actions and requires `GITHUB_TOKEN`
+or `GH_TOKEN`; `--bin-path` and `--guest-artifact-base-url` remain available for
+Reth and Ethrex overrides.
 
 ## Prerequisites
 

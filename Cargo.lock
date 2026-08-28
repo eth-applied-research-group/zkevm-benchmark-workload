@@ -3727,7 +3727,7 @@ checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
 [[package]]
 name = "stateless-validator-catalog"
 version = "0.16.0"
-source = "git+https://github.com/eth-act/ere-guests?rev=eaa3f4601e9686e1fc540a00c039532b85550879#eaa3f4601e9686e1fc540a00c039532b85550879"
+source = "git+https://github.com/eth-act/ere-guests?rev=d5a6451221acd42993f4a2c8c40b041e06571dd9#d5a6451221acd42993f4a2c8c40b041e06571dd9"
 dependencies = [
  "serde",
  "serde_json",
@@ -3737,7 +3737,7 @@ dependencies = [
 [[package]]
 name = "stateless-validator-common"
 version = "0.16.0"
-source = "git+https://github.com/eth-act/ere-guests?rev=eaa3f4601e9686e1fc540a00c039532b85550879#eaa3f4601e9686e1fc540a00c039532b85550879"
+source = "git+https://github.com/eth-act/ere-guests?rev=d5a6451221acd42993f4a2c8c40b041e06571dd9#d5a6451221acd42993f4a2c8c40b041e06571dd9"
 dependencies = [
  "libssz",
  "libssz-derive",
@@ -3750,7 +3750,7 @@ dependencies = [
 [[package]]
 name = "stateless-validator-downloader"
 version = "0.16.0"
-source = "git+https://github.com/eth-act/ere-guests?rev=eaa3f4601e9686e1fc540a00c039532b85550879#eaa3f4601e9686e1fc540a00c039532b85550879"
+source = "git+https://github.com/eth-act/ere-guests?rev=d5a6451221acd42993f4a2c8c40b041e06571dd9#d5a6451221acd42993f4a2c8c40b041e06571dd9"
 dependencies = [
  "anyhow",
  "ere-catalog",
@@ -3971,7 +3971,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",

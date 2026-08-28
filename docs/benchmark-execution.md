@@ -28,19 +28,24 @@ cargo run -p ere-hosts --release -- --zkvms sp1 \
     --input-folder /path/to/eest-fixtures
 ```
 
-Ethrex and Zesu remain accepted CLI values but are temporarily unavailable:
+Run the stateless validator with Ethrex:
 
 ```bash
 cargo run -p ere-hosts --release -- --zkvms openvm \
     stateless-validator --execution-client ethrex \
     --input-folder /path/to/eest-fixtures
-cargo run -p ere-hosts --release -- --zkvms zisk \
-    stateless-validator --execution-client zesu \
-    --input-folder /path/to/amsterdam-fixtures
 ```
 
-Both commands fail at the centralized compatibility check until `ere-guests`
-registers compatible tests-zkevm v0.8.2 artifacts.
+Zesu remains an accepted CLI value but is temporarily unavailable:
+
+```bash
+cargo run -p ere-hosts --release -- --zkvms zisk \
+    stateless-validator --execution-client zesu \
+    --input-folder /path/to/eest-fixtures
+```
+
+The Zesu command fails at the centralized compatibility check until
+`ere-guests` registers compatible tests-zkevm v0.8.2 artifacts.
 
 Run directly from an EEST fixture checkout:
 
@@ -143,11 +148,11 @@ When `--proofs-url` is used, the archive is downloaded, extracted to a temporary
 
 ## Guest Artifact Resolution
 
-Default guests use the `ere-guests` artifact resolver. Tagged dependencies use release assets for that tag; commit or branch dependencies use GitHub Actions artifacts for the resolved commit and require `GITHUB_TOKEN` or `GH_TOKEN`. This repository currently pins an exact commit, so one of those token variables is required for default Reth artifact downloads.
+Default guests use the `ere-guests` artifact resolver. Tagged dependencies use release assets for that tag; commit or branch dependencies use GitHub Actions artifacts for the resolved commit and require `GITHUB_TOKEN` or `GH_TOKEN`. This repository currently pins an exact commit, so one of those token variables is required for default Reth and Ethrex artifact downloads.
 
 Artifacts are named `stateless-validator-<execution-client>-<zkvm>-<zkvm-sdk-version>`, so a zkVM SDK bump changes the resolved file names.
 
-Use local Reth artifacts with `--bin-path <DIRECTORY>`, or provide a compatible remote directory with `--guest-artifact-base-url <URL>`. Those options remain mutually exclusive. The temporary Ethrex/Zesu compatibility check also applies to custom artifact sources.
+Use local Reth or Ethrex artifacts with `--bin-path <DIRECTORY>`, or provide a compatible remote directory with `--guest-artifact-base-url <URL>`. Those options remain mutually exclusive. The temporary Zesu compatibility check also applies to custom artifact sources.
 
 ## Operational Notes
 
