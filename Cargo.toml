@@ -103,10 +103,10 @@ zkevm-metrics = { path = "crates/metrics" }
 benchmark-runner = { path = "crates/benchmark-runner" }
 
 # ere
-ere-dockerized = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
-ere-cluster-client-openvm = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
-ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
-ere-util-tokio = { git = "https://github.com/eth-act/ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
+ere-dockerized = { git = "https://github.com/eth-act/ere", rev = "0e88b865d4241bddf42c0f8821fa93b02b9efa4e" }
+ere-cluster-client-openvm = { git = "https://github.com/eth-act/ere", rev = "0e88b865d4241bddf42c0f8821fa93b02b9efa4e" }
+ere-cluster-client-zisk = { git = "https://github.com/eth-act/ere", rev = "0e88b865d4241bddf42c0f8821fa93b02b9efa4e" }
+ere-util-tokio = { git = "https://github.com/eth-act/ere", rev = "0e88b865d4241bddf42c0f8821fa93b02b9efa4e" }
 
 # ere-guests
 stateless-validator-catalog = { git = "https://github.com/eth-act/ere-guests", tag = "v0.16.0" }
@@ -148,5 +148,5 @@ hex = "0.4"
 zstd = "0.13"
 
 [patch."https://github.com/eth-act/ere"]
-ere-catalog = { git = "https://github.com/eth-act//ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
-ere-util-build = { git = "https://github.com/eth-act//ere", rev = "135fe4b0839dcc85ca31e7c2ffd82329e0486a64" }
+ere-catalog = { git = "https://github.com/eth-act//ere", rev = "0e88b865d4241bddf42c0f8821fa93b02b9efa4e" }
+ere-util-build = { git = "https://github.com/eth-act//ere", rev = "0e88b865d4241bddf42c0f8821fa93b02b9efa4e" }

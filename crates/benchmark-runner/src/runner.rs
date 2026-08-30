@@ -6,7 +6,7 @@ use ere_cluster_client_zisk::{ZiskClusterClient, ZiskProof};
 use ere_dockerized::{
     codec::{Decode, Encode},
     zkVMKind, zkVMVerifier, DockerizedzkVM, DockerizedzkVMConfig, Elf, EncodedProof, Input,
-    ProgramExecutionReport, ProgramProvingReport, ProverResource, PublicValues,
+    ProverResource, PublicValues,
 };
 use ere_util_tokio::block_on;
 use rayon::iter::{ParallelBridge, ParallelIterator};
@@ -129,7 +129,7 @@ impl ZkVMInstance {
     }
 
     /// Executes the guest program without proving.
-    pub fn execute(&self, input: &Input) -> Result<(PublicValues, ProgramExecutionReport)> {
+    pub fn execute(&self, input: &Input) -> Result<(PublicValues, Duration)> {
         match self {
             Self::Dockerized { zkvm, .. } => zkvm.execute(input),
             Self::ZiskClusterClient { .. } => {
@@ -142,10 +142,7 @@ impl ZkVMInstance {
     }
 
     /// Generates a proof for the guest program with the given input.
-    pub fn prove(
-        &self,
-        input: &Input,
-    ) -> Result<(PublicValues, EncodedProof, ProgramProvingReport)> {
+    pub fn prove(&self, input: &Input) -> Result<(PublicValues, EncodedProof, Duration)> {
         match self {
             Self::Dockerized { zkvm, .. } => zkvm.prove(input),
             Self::ZiskClusterClient {
@@ -157,11 +154,7 @@ impl ZkVMInstance {
                 let (proof, proving_time) = block_on(client.prove(input, deadline))?;
                 let (_, public_values) = proof.program_vk_and_public_values()?;
                 let proof = proof.encode_to_vec()?;
-                Ok((
-                    public_values,
-                    EncodedProof(proof),
-                    ProgramProvingReport::new(proving_time),
-                ))
+                Ok((public_values, EncodedProof(proof), proving_time))
             }
             Self::OpenVMClusterClient {
                 client,
@@ -173,11 +166,7 @@ impl ZkVMInstance {
                 // are read directly rather than split off a vk-prefixed field.
                 let public_values = extract_public_values(&proof.0.user_pvs_proof.public_values)?;
                 let proof = proof.encode_to_vec()?;
-                Ok((
-                    public_values,
-                    EncodedProof(proof),
-                    ProgramProvingReport::new(proving_time),
-                ))
+                Ok((public_values, EncodedProof(proof), proving_time))
             }
         }
     }
@@ -396,15 +385,15 @@ fn process_input(zkvm: &ZkVMInstance, io: impl GuestFixture, config: &RunConfig)
 
             let run = panic::catch_unwind(panic::AssertUnwindSafe(|| zkvm.execute(&input)));
             let execution = match run {
-                Ok(Ok((public_values, report))) => {
+                Ok(Ok((public_values, execution_duration))) => {
                     let output_matched = public_output_matched(&io, &public_values)
                         .context("Failed to compare public output from execution")?;
 
                     ExecutionMetrics::Success {
                         output_matched,
-                        total_num_cycles: report.total_num_cycles,
-                        region_cycles: report.region_cycles.into_iter().collect(),
-                        execution_duration: report.execution_duration,
+                        total_num_cycles: Default::default(),
+                        region_cycles: Default::default(),
+                        execution_duration,
                     }
                 }
                 Ok(Err(e)) => ExecutionMetrics::Crashed(CrashInfo {
@@ -419,7 +408,7 @@ fn process_input(zkvm: &ZkVMInstance, io: impl GuestFixture, config: &RunConfig)
         Action::Prove => {
             let run = panic::catch_unwind(panic::AssertUnwindSafe(|| zkvm.prove(&input)));
             let proving = match run {
-                Ok(Ok((public_values, proof, report))) => {
+                Ok(Ok((public_values, proof, proving_time))) => {
                     let prover_output_matched = public_output_matched(&io, &public_values)
                         .context("Failed to compare public output from proof")?;
 
@@ -444,7 +433,7 @@ fn process_input(zkvm: &ZkVMInstance, io: impl GuestFixture, config: &RunConfig)
                     ProvingMetrics::Success {
                         output_matched: prover_output_matched && verifier_output_matched,
                         proof_size: proof.len(),
-                        proving_time_ms: report.proving_time.as_millis(),
+                        proving_time_ms: proving_time.as_millis(),
                         verification_time_ms,
                     }
                 }
